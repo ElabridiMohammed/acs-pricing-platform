@@ -16,10 +16,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 from formula_engine import (
-    load_historical_prices, load_phosphate_prices, load_base_data,
+    load_historical_prices, load_historical_prices_extended,
+    load_phosphate_prices,
     compute_formula_1, compute_formula_2, compute_formula_3,
-    compute_formula_4, compute_formula_5,
-    apply_formula_to_scenario
+    compute_formula_4, compute_formula_5, compute_formula_6,
 )
 
 st.set_page_config(
@@ -29,73 +29,77 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ============================================================
+# LIGHT-MODE STYLES
+# ============================================================
+
 STYLES = """
 <style>
-    .main { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+    .stApp { background-color: #f8f9fc; }
     .stApp header { background-color: transparent; }
     
     div[data-testid="metric-container"] {
-        background: linear-gradient(135deg, #2d3a4f 0%, #1e2840 100%);
-        border: 1px solid #3d4f6f; border-radius: 12px; padding: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background: #ffffff;
+        border: 1px solid #e2e6ed; border-radius: 12px; padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
-    div[data-testid="metric-container"] label { color: #8fa3bf !important; font-size: 0.9rem; }
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #fff !important; font-size: 1.8rem; font-weight: 600; }
+    div[data-testid="metric-container"] label { color: #5a6a85 !important; font-size: 0.9rem; }
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #1a2332 !important; font-size: 1.8rem; font-weight: 600; }
     
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e2840 0%, #0f1729 100%);
-        border-right: 1px solid #2d3a4f;
+        background: #ffffff;
+        border-right: 1px solid #e2e6ed;
     }
     section[data-testid="stSidebar"] .stSelectbox label,
     section[data-testid="stSidebar"] .stSlider label,
-    section[data-testid="stSidebar"] .stRadio label { color: #8fa3bf !important; font-weight: 500; }
+    section[data-testid="stSidebar"] .stRadio label { color: #3a4a65 !important; font-weight: 500; }
     
-    h1, h2, h3 { color: #ffffff !important; }
+    h1, h2, h3 { color: #1a2332 !important; }
     
     .stButton > button {
-        background: linear-gradient(135deg, #4a8cff 0%, #3366cc 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white; border: none; border-radius: 8px;
         padding: 10px 25px; font-weight: 600; transition: all 0.3s ease;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #5a9cff 0%, #4376dc 100%);
-        box-shadow: 0 4px 15px rgba(74, 140, 255, 0.4);
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
     }
     
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px; background: rgba(30, 40, 64, 0.6); border-radius: 10px; padding: 5px;
+        gap: 8px; background: #eef1f6; border-radius: 10px; padding: 5px;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px; color: #8fa3bf; font-weight: 600; padding: 10px 20px;
+        border-radius: 8px; color: #5a6a85; font-weight: 600; padding: 10px 20px;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #4a8cff 0%, #3366cc 100%) !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
     }
     
     .formula-card {
-        background: linear-gradient(135deg, #2d3a4f 0%, #1e2840 100%);
-        border: 1px solid #3d4f6f; border-radius: 12px; padding: 20px;
-        margin: 10px 0;
+        background: #ffffff;
+        border: 1px solid #e2e6ed; border-radius: 12px; padding: 20px;
+        margin: 10px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     }
-    .formula-card h4 { color: #4a8cff; margin: 0 0 10px 0; }
-    .formula-card .value { font-size: 1.6rem; font-weight: 700; color: #fff; }
-    .formula-card .label { color: #8fa3bf; font-size: 0.85rem; }
+    .formula-card h4 { color: #2563eb; margin: 0 0 10px 0; }
+    .formula-card .value { font-size: 1.6rem; font-weight: 700; color: #1a2332; }
+    .formula-card .label { color: #5a6a85; font-size: 0.85rem; }
     
     .formula-eq-box {
-        background: #0d1520; border: 1px solid #3d4f6f; border-radius: 10px;
+        background: #f0f4ff; border: 1px solid #d0daf0; border-radius: 10px;
         padding: 18px 24px; margin: 12px 0; text-align: center;
     }
     .formula-eq {
         font-family: 'Courier New', monospace; font-size: 1.2rem;
-        color: #ffd700; font-weight: 600;
+        color: #1d4ed8; font-weight: 600;
     }
     .formula-desc {
-        color: #8fa3bf; font-size: 0.85rem; margin-top: 6px;
+        color: #5a6a85; font-size: 0.85rem; margin-top: 6px;
     }
     
-    .gain { color: #00d26a !important; }
-    .loss { color: #ff4757 !important; }
+    .gain { color: #16a34a !important; }
+    .loss { color: #dc2626 !important; }
 </style>
 """
 st.markdown(STYLES, unsafe_allow_html=True)
@@ -111,19 +115,22 @@ FORMULA_LIST = [
     "F3 — Last Month ACS Indexing",
     "F4 — S & DAP Variation Indexing",
     "F5 — Smooth S & Smooth DAP Indexing",
+    "F6 — S, DAP, Petcoke & Clinker Indexing",
 ]
 
 FORMULA_EQUATIONS = {
     0: ("P = a × (S_weighted × conv_ratio + prod_cost) + b",
-        "Price from sulfur spot prices with weighted ME/NA mix"),
-    1: ("P = a × (Smooth_3m(S) × conv_ratio + prod_cost) + b",
-        "Like F1 but uses 3-month rolling average of sulfur"),
+        "Direct sulfur indexing with weighted ME/NA mix"),
+    1: ("P = a × (Smooth(S) × conv_ratio + prod_cost) + b",
+        "Like F1 but uses smoothed rolling average of sulfur"),
     2: ("P = a × ACS_weighted(m-1)",
-        "Last month's ACS price with regional weighting"),
+        "Last month's ACS price with regional weighting (NA/EU/JP/CH)"),
     3: ("P = ACS₀ × (a + b × S/S₀ + c × DAP/DAP₀)",
         "Variation-based: tracks changes in sulfur and DAP vs reference"),
     4: ("P = ACS₀ × (a + b × Sm(S)/S₀ + c × Sm(DAP)/DAP₀)",
-        "Like F4 but uses smoothed sulfur and DAP"),
+        "Like F4 but uses smoothed sulfur and DAP inputs"),
+    5: ("P = ACS₀ × (a + b·S/S₀ + c·DAP/DAP₀ + d·PC/PC₀ + e·(1−CLK/CLK₀))",
+        "Full cost-stack variation: sulfur + DAP + petcoke + clinker"),
 }
 
 
@@ -267,21 +274,23 @@ def simulate_prices(trend, volatility, spike_freq, spike_intensity, spike_persis
 
 
 # ============================================================
-# CHARTS
+# CHARTS (Light-mode color scheme)
 # ============================================================
 
-CHART_BG = 'rgba(20,25,35,0.95)'
+CHART_BG = '#ffffff'
 CHART_PAPER = 'rgba(0,0,0,0)'
-GRID_COLOR = 'rgba(255,255,255,0.08)'
-FONT_COLOR = '#9BA3AF'
+GRID_COLOR = 'rgba(0,0,0,0.07)'
+FONT_COLOR = '#4a5568'
 
 def chart_layout(fig, title, height=500, yaxis_title='Price (USD/t)'):
     fig.update_layout(
-        title=dict(text=title, font=dict(size=16, color='white'), x=0.5),
+        title=dict(text=title, font=dict(size=16, color='#1a2332'), x=0.5),
         xaxis=dict(gridcolor=GRID_COLOR, tickfont=dict(color=FONT_COLOR, size=11)),
-        yaxis=dict(title=yaxis_title, gridcolor=GRID_COLOR, tickfont=dict(color=FONT_COLOR, size=11)),
+        yaxis=dict(title=yaxis_title, gridcolor=GRID_COLOR, tickfont=dict(color=FONT_COLOR, size=11),
+                   title_font=dict(color=FONT_COLOR)),
         plot_bgcolor=CHART_BG, paper_bgcolor=CHART_PAPER,
-        legend=dict(bgcolor='rgba(30,35,50,0.9)', font=dict(color='white', size=10),
+        legend=dict(bgcolor='rgba(255,255,255,0.95)', font=dict(color='#1a2332', size=10),
+                    bordercolor='#e2e6ed', borderwidth=1,
                     orientation='h', yanchor='bottom', y=1.02, x=0.5, xanchor='center'),
         hovermode='x unified', margin=dict(l=60, r=40, t=80, b=50), height=height
     )
@@ -294,15 +303,15 @@ def create_projection_chart(results, product_name, scenario_idx=0):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=dates, y=results['percentile_95'], mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
     fig.add_trace(go.Scatter(x=dates, y=results['percentile_5'], mode='lines', line=dict(width=0),
-                              fill='tonexty', fillcolor='rgba(180,180,180,0.25)', name='95% Confidence', hoverinfo='skip'))
+                              fill='tonexty', fillcolor='rgba(37,99,235,0.12)', name='95% Confidence', hoverinfo='skip'))
     fig.add_trace(go.Scatter(x=dates, y=results['trend'], mode='lines',
-                              line=dict(color='#DC143C', width=2.5, dash='dot'), name='CRU Outlook',
+                              line=dict(color='#dc2626', width=2.5, dash='dot'), name='CRU Outlook',
                               hovertemplate='<b>CRU</b><br>%{x|%b %Y}<br>$%{y:.1f}/t<extra></extra>'))
     fig.add_trace(go.Scatter(x=dates, y=path, mode='lines',
-                              line=dict(color='#1E90FF', width=2.5), name=f'Scenario #{scenario_idx + 1}',
+                              line=dict(color='#2563eb', width=2.5), name=f'Scenario #{scenario_idx + 1}',
                               hovertemplate='<b>Scenario</b><br>%{x|%b %Y}<br>$%{y:.1f}/t<extra></extra>'))
     fig.add_trace(go.Scatter(x=dates, y=results['mean_path'], mode='lines',
-                              line=dict(color='#4169E1', width=1.5, dash='dash'), name='MC Mean', visible='legendonly'))
+                              line=dict(color='#6366f1', width=1.5, dash='dash'), name='MC Mean', visible='legendonly'))
     return chart_layout(fig, f'<b>{product_name} Price Projection</b>')
 
 
@@ -311,36 +320,53 @@ def create_distribution_chart(results, year):
     if not any(mask): return None
     prices = results['all_paths'][:, mask][:, -1]
     fig = go.Figure()
-    fig.add_trace(go.Histogram(x=prices, nbinsx=40, marker=dict(color='#4a8cff', line=dict(color='white', width=0.5)), opacity=0.8))
-    fig.add_vline(x=np.mean(prices), line=dict(color='#ffaa33', width=2, dash='dash'), annotation_text=f'Mean: ${np.mean(prices):.0f}')
+    fig.add_trace(go.Histogram(x=prices, nbinsx=40,
+                                marker=dict(color='#2563eb', line=dict(color='white', width=0.5)), opacity=0.8))
+    fig.add_vline(x=np.mean(prices), line=dict(color='#f59e0b', width=2, dash='dash'),
+                  annotation_text=f'Mean: ${np.mean(prices):.0f}')
     return chart_layout(fig, f'<b>Distribution - {year}</b>', height=300, yaxis_title='Frequency')
 
 
-def create_formula_vs_market_chart(bt, formula_name):
+def create_formula_vs_market_chart(bt, formula_name, floor=None, cap=None):
     """Chart: Formula price vs Market price over time."""
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=bt['Period'], y=bt['Market'], mode='lines+markers',
-                              line=dict(color='#DC143C', width=3), name='Market (ACS CFR N.Africa)',
+                              line=dict(color='#dc2626', width=3), name='Market (ACS CFR N.Africa)',
                               marker=dict(size=5)))
     fig.add_trace(go.Scatter(x=bt['Period'], y=bt['Formula'], mode='lines+markers',
-                              line=dict(color='#1E90FF', width=2.5), name=f'{formula_name}',
+                              line=dict(color='#2563eb', width=2.5), name=f'{formula_name}',
                               marker=dict(size=5)))
+    if floor is not None:
+        fig.add_hline(y=floor, line=dict(color='#f59e0b', width=1.5, dash='dash'),
+                      annotation_text=f'Floor: ${floor}')
+    if cap is not None:
+        fig.add_hline(y=cap, line=dict(color='#f59e0b', width=1.5, dash='dash'),
+                      annotation_text=f'Cap: ${cap}')
     return chart_layout(fig, f'<b>{formula_name} vs Market</b>')
 
 
-def create_pnl_chart(bt, formula_name):
-    """P&L waterfall for a single formula."""
-    colors = ['#00d26a' if v >= 0 else '#ff4757' for v in bt['PnL']]
+def create_pnl_chart(bt, formula_name, view_mode='quarterly'):
+    """P&L chart for a single formula. Supports quarterly and annual aggregation."""
+    if view_mode == 'annual' and 'Year' in bt.columns:
+        agg = bt.groupby('Year').agg({'PnL': 'mean', 'Period': 'first'}).reset_index()
+        agg['Period'] = agg['Year'].astype(str)
+        data = agg
+        period_label = 'Annual'
+    else:
+        data = bt
+        period_label = 'Quarterly'
+    
+    colors = ['#16a34a' if v >= 0 else '#dc2626' for v in data['PnL']]
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=bt['Period'], y=bt['PnL'],
+    fig.add_trace(go.Bar(x=data['Period'], y=data['PnL'],
         marker=dict(color=colors, line=dict(color='white', width=0.5)),
         hovertemplate='<b>%{x}</b><br>P&L: $%{y:.1f}/t<extra></extra>'))
-    fig.add_hline(y=0, line=dict(color='white', width=1))
-    avg = bt['PnL'].mean()
-    fig.add_hline(y=avg, line=dict(color='#ffaa33', width=2, dash='dash'),
+    fig.add_hline(y=0, line=dict(color='#94a3b8', width=1))
+    avg = data['PnL'].mean()
+    fig.add_hline(y=avg, line=dict(color='#f59e0b', width=2, dash='dash'),
                   annotation_text=f'Avg: ${avg:.1f}/t')
-    return chart_layout(fig, f'<b>Quarterly P&L — {formula_name}</b><br>'
-                        f'<sup style="color:#888">Green = market above formula (buyer advantage)</sup>',
+    return chart_layout(fig, f'<b>{period_label} P&L — {formula_name}</b><br>'
+                        f'<sup style="color:#6b7280">Green = market above formula (buyer advantage)</sup>',
                         yaxis_title='P&L ($/t)')
 
 
@@ -348,16 +374,16 @@ def create_scenario_formula_chart(scenario_result, product_name):
     dates = scenario_result['dates']
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=dates, y=scenario_result['acs_index'], mode='lines',
-                              line=dict(color='#DC143C', width=2, dash='dot'), name='ACS Market Index'))
+                              line=dict(color='#dc2626', width=2, dash='dot'), name='ACS Market Index'))
     fig.add_trace(go.Scatter(x=dates, y=scenario_result['blended'], mode='lines',
-                              line=dict(color='#ffaa33', width=2.5), name='Blended Formula'))
+                              line=dict(color='#f59e0b', width=2.5), name='Blended Formula'))
     fig.add_trace(go.Scatter(x=dates, y=scenario_result['capped'], mode='lines',
-                              line=dict(color='#1E90FF', width=3), name='Final (Floor/Cap)'))
+                              line=dict(color='#2563eb', width=3), name='Final (Floor/Cap)'))
     if scenario_result['floor'] > 0:
-        fig.add_hline(y=scenario_result['floor'], line=dict(color='#ff4757', width=1, dash='dash'),
+        fig.add_hline(y=scenario_result['floor'], line=dict(color='#dc2626', width=1, dash='dash'),
                       annotation_text=f'Floor: ${scenario_result["floor"]:.0f}')
     if scenario_result['cap'] < 1000:
-        fig.add_hline(y=scenario_result['cap'], line=dict(color='#ff4757', width=1, dash='dash'),
+        fig.add_hline(y=scenario_result['cap'], line=dict(color='#dc2626', width=1, dash='dash'),
                       annotation_text=f'Cap: ${scenario_result["cap"]:.0f}')
     return chart_layout(fig, f'<b>{product_name} — Formula Applied to Scenario</b>')
 
@@ -369,17 +395,19 @@ def create_scenario_formula_chart(scenario_result, product_name):
 def main():
     st.markdown("""
     <div style='text-align: center; padding: 15px 0;'>
-        <h1 style='color: #4a8cff; font-size: 2.3rem; margin-bottom: 5px;'>
+        <h1 style='color: #2563eb; font-size: 2.3rem; margin-bottom: 5px;'>
             ACS Pricing Decision Platform
         </h1>
-        <p style='color: #8fa3bf; font-size: 1rem;'>
+        <p style='color: #5a6a85; font-size: 1rem;'>
             Monte Carlo Simulation  |  Formula Analysis  |  Revenue Optimization
         </p>
     </div>
     """, unsafe_allow_html=True)
     
     DATA_PATH = Path(__file__).parent / "Formules de prix_ACS.xlsx"
-    FORMULA_PATH = Path(__file__).parent / "0902_1700_ACS Pricing simulator_MG (1).xlsx"
+    NEW_FORMULA_PATH = Path(__file__).parent / "1202_1203_ACS Pricing simulator.xlsx"
+    OLD_FORMULA_PATH = Path(__file__).parent / "0902_1700_ACS Pricing simulator_MG (1).xlsx"
+    FORMULA_PATH = NEW_FORMULA_PATH if NEW_FORMULA_PATH.exists() else OLD_FORMULA_PATH
     
     if not DATA_PATH.exists():
         DATA_PATH = Path("/Users/elabridi/Desktop/domaine project/Formules de prix_ACS.xlsx")
@@ -391,7 +419,7 @@ def main():
     # ============================================================
     with tab1:
         with st.sidebar:
-            st.markdown("<h2 style='color: #4a8cff; text-align: center;'>Parameters</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='color: #2563eb; text-align: center;'>Parameters</h2>", unsafe_allow_html=True)
             st.markdown("---")
             
             st.markdown("### Product")
@@ -520,8 +548,13 @@ def main():
         
         st.markdown("### Formula Lab")
         
+        # ---- DATA SOURCE ----
+        use_new = NEW_FORMULA_PATH.exists()
+        use_old = OLD_FORMULA_PATH.exists()
+        
         # ---- FORMULA SELECTOR ----
-        selected = st.selectbox("Choose a formula", FORMULA_LIST, key='formula_pick')
+        available_formulas = FORMULA_LIST if use_new else FORMULA_LIST[:5]  # F6 only with new file
+        selected = st.selectbox("Choose a formula", available_formulas, key='formula_pick')
         formula_idx = FORMULA_LIST.index(selected)
         
         eq_text, eq_desc = FORMULA_EQUATIONS[formula_idx]
@@ -532,11 +565,23 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
+        # ---- VIEW TOGGLE ----
+        view_mode = st.radio("View", ["Quarterly", "Annual"], horizontal=True, key='view_mode')
+        view_key = 'annual' if view_mode == 'Annual' else 'quarterly'
+        
+        # ---- LOAD DATA (backtest only — historical up to today) ----
+        if use_new:
+            hist = load_historical_prices_extended(str(NEW_FORMULA_PATH))
+        else:
+            hist = load_historical_prices(str(OLD_FORMULA_PATH))
+        phos = load_phosphate_prices(str(FORMULA_PATH))
+        
+        # Filter to historical only (up to current year)
+        if hist is not None and 'Year' in hist.columns:
+            hist = hist[hist['Year'] <= 2025].copy()
+        
         # ---- FORMULA-SPECIFIC PARAMETERS ----
         st.markdown("#### Parameters")
-        
-        hist = load_historical_prices(str(FORMULA_PATH))
-        phos = load_phosphate_prices(str(FORMULA_PATH))
         
         if formula_idx == 0:
             # F1: Sulfur Indexing Only
@@ -550,10 +595,9 @@ def main():
             with pc3:
                 f1_conv = st.slider("Conversion ratio", 0.1, 1.0, 0.33, 0.01, key='f1_conv')
                 f1_prod = st.number_input("Production cost ($/t)", 5, 50, 20, 5, key='f1_prod')
-            
+            floor_def, cap_def = 110, 220
             params = {'a': f1_a, 'b': f1_b, 'sulfur_me': f1_s_me, 'sulfur_na': f1_s_na,
                       'conv_ratio': f1_conv, 'prod_cost': f1_prod}
-            bt = compute_formula_1(hist, params)
             formula_name = "Sulfur Indexing"
 
         elif formula_idx == 1:
@@ -568,10 +612,10 @@ def main():
             with pc3:
                 f2_conv = st.slider("Conversion ratio", 0.1, 1.0, 0.33, 0.01, key='f2_conv')
                 f2_prod = st.number_input("Production cost ($/t)", 5, 50, 20, 5, key='f2_prod')
-            
+                f2_window = st.slider("Smooth window (months)", 3, 12, 6, 1, key='f2_window')
+            floor_def, cap_def = 110, 220
             params = {'a': f2_a, 'b': f2_b, 'sulfur_me': f2_s_me, 'sulfur_na': f2_s_na,
-                      'conv_ratio': f2_conv, 'prod_cost': f2_prod}
-            bt = compute_formula_2(hist, params)
+                      'conv_ratio': f2_conv, 'prod_cost': f2_prod, 'smooth_window': f2_window}
             formula_name = "Smooth Sulfur"
 
         elif formula_idx == 2:
@@ -584,52 +628,78 @@ def main():
                 f3_eu = st.slider("ACS Europe weight", 0.0, 1.0, 0.75, 0.05, key='f3_eu')
                 f3_jp = st.slider("ACS Japan weight", 0.0, 1.0, 0.0, 0.05, key='f3_jp')
                 f3_ch = st.slider("ACS China weight", 0.0, 1.0, 0.20, 0.05, key='f3_ch')
-            
+            floor_def, cap_def = 110, 220
             params = {'a': f3_a, 'acs_na': f3_na, 'acs_eu': f3_eu, 'acs_jp': f3_jp, 'acs_ch': f3_ch}
-            bt = compute_formula_3(hist, params)
             formula_name = "Last Month ACS"
 
         elif formula_idx == 3:
             # F4: S & DAP Variation
             pc1, pc2 = st.columns(2)
             with pc1:
-                f4_a = st.slider("a (fixed %)", 0.0, 1.0, 0.65, 0.05, key='f4_a')
-                f4_b = st.slider("b (sulfur %)", 0.0, 1.0, 0.30, 0.05, key='f4_b')
-                f4_c = st.slider("c (DAP %)", 0.0, 1.0, 0.05, 0.05, key='f4_c')
+                f4_a = st.slider("a (fixed %)", 0.0, 1.0, 0.70, 0.05, key='f4_a')
+                f4_b = st.slider("b (sulfur %)", 0.0, 1.0, 0.10, 0.05, key='f4_b')
+                f4_c = st.slider("c (DAP %)", 0.0, 1.0, 0.20, 0.05, key='f4_c')
             with pc2:
                 f4_acs0 = st.number_input("ACS0 (reference ACS $/t)", 50, 300, 110, 10, key='f4_acs0')
                 f4_s0 = st.number_input("S0 (reference sulfur $/t)", 50, 300, 130, 10, key='f4_s0')
                 f4_dap0 = st.number_input("DAP0 (reference DAP $/t)", 200, 1000, 500, 50, key='f4_dap0')
-            
-            params = {'a': f4_a, 'b': f4_b, 'c': f4_c, 'acs0': f4_acs0, 's0': f4_s0, 'dap0': f4_dap0}
-            bt = compute_formula_4(hist, phos, params)
+            floor_def, cap_def = 110, 230
+            params = {'a': f4_a, 'b': f4_b, 'c': f4_c, 'acs0': f4_acs0, 's0': f4_s0,
+                      'dap0': f4_dap0, '_phos': phos}
             formula_name = "S & DAP Variation"
 
         elif formula_idx == 4:
             # F5: Smooth S & Smooth DAP
             pc1, pc2 = st.columns(2)
             with pc1:
-                f5_a = st.slider("a (fixed %)", 0.0, 1.0, 0.60, 0.05, key='f5_a')
-                f5_b = st.slider("b (sulfur %)", 0.0, 1.0, 0.30, 0.05, key='f5_b')
+                f5_a = st.slider("a (fixed %)", 0.0, 1.0, 0.80, 0.05, key='f5_a')
+                f5_b = st.slider("b (sulfur %)", 0.0, 1.0, 0.10, 0.05, key='f5_b')
                 f5_c = st.slider("c (DAP %)", 0.0, 1.0, 0.10, 0.05, key='f5_c')
             with pc2:
                 f5_acs0 = st.number_input("ACS0 (reference ACS $/t)", 50, 300, 110, 10, key='f5_acs0')
                 f5_s0 = st.number_input("S0 (reference sulfur $/t)", 50, 300, 130, 10, key='f5_s0')
                 f5_dap0 = st.number_input("DAP0 (reference DAP $/t)", 200, 1000, 500, 50, key='f5_dap0')
-            
-            params = {'a': f5_a, 'b': f5_b, 'c': f5_c, 'acs0': f5_acs0, 's0': f5_s0, 'dap0': f5_dap0}
-            bt = compute_formula_5(hist, phos, params)
+                f5_window = st.slider("Smooth window (months)", 3, 12, 6, 1, key='f5_window')
+            floor_def, cap_def = 110, 230
+            params = {'a': f5_a, 'b': f5_b, 'c': f5_c, 'acs0': f5_acs0, 's0': f5_s0,
+                      'dap0': f5_dap0, 'smooth_window': f5_window, '_phos': phos}
             formula_name = "Smooth S & DAP"
+
+        elif formula_idx == 5:
+            # F6: S, DAP, Petcoke & Clinker
+            pc1, pc2, pc3 = st.columns(3)
+            with pc1:
+                f6_a = st.slider("a (fixed %)", 0.0, 1.0, 0.60, 0.05, key='f6_a')
+                f6_b = st.slider("b (sulfur %)", 0.0, 1.0, 0.05, 0.01, key='f6_b')
+                f6_c = st.slider("c (DAP %)", 0.0, 1.0, 0.20, 0.05, key='f6_c')
+                f6_d = st.slider("d (petcoke %)", 0.0, 1.0, 0.05, 0.01, key='f6_d')
+                f6_e = st.slider("e (clinker %)", 0.0, 1.0, 0.10, 0.01, key='f6_e')
+            with pc2:
+                f6_acs0 = st.number_input("ACS0 ($/t)", 50, 300, 110, 10, key='f6_acs0')
+                f6_s0 = st.number_input("S0 ($/t)", 50, 300, 130, 10, key='f6_s0')
+                f6_dap0 = st.number_input("DAP0 ($/t)", 200, 1000, 500, 50, key='f6_dap0')
+            with pc3:
+                f6_pc0 = st.number_input("PC0 (petcoke ref $/t)", 50, 300, 140, 10, key='f6_pc0')
+                f6_clk0 = st.number_input("CLK0 (clinker ref $/t)", 50, 300, 130, 10, key='f6_clk0')
+            floor_def, cap_def = 110, 230
+            params = {'a': f6_a, 'b': f6_b, 'c': f6_c, 'd': f6_d, 'e': f6_e,
+                      'acs0': f6_acs0, 's0': f6_s0, 'dap0': f6_dap0, 'pc0': f6_pc0, 'clk0': f6_clk0}
+            formula_name = "S, DAP, Petcoke & Clinker"
         
         # ---- FLOOR / CAP ----
         st.markdown("---")
         floor_cap_cols = st.columns(2)
-        floor_val = floor_cap_cols[0].number_input("Floor ($/t)", 0, 200, 0, 10, key='floor')
-        cap_val = floor_cap_cols[1].number_input("Cap ($/t)", 100, 500, 300, 10, key='cap')
+        floor_val = floor_cap_cols[0].number_input("Floor ($/t)", 0, 300, floor_def, 10, key='floor')
+        cap_val = floor_cap_cols[1].number_input("Cap ($/t)", 100, 500, cap_def, 10, key='cap')
         
-        if floor_val > 0 or cap_val < 300:
-            bt['Formula'] = bt['Formula'].clip(lower=floor_val, upper=cap_val)
-            bt['PnL'] = bt['Market'] - bt['Formula']
+        params['floor'] = floor_val
+        params['cap'] = cap_val
+        
+        # ---- COMPUTE (backtest only) ----
+        compute_fns = [compute_formula_1, compute_formula_2, compute_formula_3,
+                       compute_formula_4, compute_formula_5, compute_formula_6]
+        
+        bt = compute_fns[formula_idx](hist, params, view=view_key)
         
         # ---- FILTER YEARS ----
         start_yr = st.select_slider("History from", list(range(2002, 2026)), value=2018, key='hist_start')
@@ -641,9 +711,9 @@ def main():
             st.markdown("---")
             
             # ---- CHARTS ----
-            st.plotly_chart(create_formula_vs_market_chart(bt_filtered, formula_name), use_container_width=True)
+            st.plotly_chart(create_formula_vs_market_chart(bt_filtered, formula_name, floor=floor_val, cap=cap_val), use_container_width=True)
             
-            st.plotly_chart(create_pnl_chart(bt_filtered, formula_name), use_container_width=True)
+            st.plotly_chart(create_pnl_chart(bt_filtered, formula_name, view_mode=view_key), use_container_width=True)
             
             # ---- SUMMARY METRICS ----
             st.markdown("### Performance Summary")
@@ -653,38 +723,39 @@ def main():
             pct_positive = (bt_filtered['PnL'] >= 0).mean() * 100
             max_loss = bt_filtered['PnL'].min()
             max_gain = bt_filtered['PnL'].max()
+            period_label = "year" if view_key == 'annual' else "quarter"
             
             mc1, mc2, mc3, mc4, mc5 = st.columns(5)
             
-            clr = '#00d26a' if avg_pnl >= 0 else '#ff4757'
+            clr = '#16a34a' if avg_pnl >= 0 else '#dc2626'
             mc1.markdown(f"""
             <div class='formula-card'>
                 <h4>Avg P&L</h4>
                 <div class='value' style='color: {clr}'>${avg_pnl:+.1f}/t</div>
-                <div class='label'>Per quarter</div>
+                <div class='label'>Per {period_label}</div>
             </div>
             """, unsafe_allow_html=True)
             
             mc2.markdown(f"""
             <div class='formula-card'>
                 <h4>Win Rate</h4>
-                <div class='value' style='color: {"#00d26a" if pct_positive >= 50 else "#ff4757"}'>{pct_positive:.0f}%</div>
-                <div class='label'>of quarters formula below market</div>
+                <div class='value' style='color: {"#16a34a" if pct_positive >= 50 else "#dc2626"}'>{pct_positive:.0f}%</div>
+                <div class='label'>of {period_label}s formula below market</div>
             </div>
             """, unsafe_allow_html=True)
             
             mc3.markdown(f"""
             <div class='formula-card'>
-                <h4>Best Quarter</h4>
-                <div class='value' style='color: #00d26a'>${max_gain:+.1f}/t</div>
+                <h4>Best {period_label.title()}</h4>
+                <div class='value' style='color: #16a34a'>${max_gain:+.1f}/t</div>
                 <div class='label'>Maximum advantage</div>
             </div>
             """, unsafe_allow_html=True)
             
             mc4.markdown(f"""
             <div class='formula-card'>
-                <h4>Worst Quarter</h4>
-                <div class='value' style='color: #ff4757'>${max_loss:+.1f}/t</div>
+                <h4>Worst {period_label.title()}</h4>
+                <div class='value' style='color: #dc2626'>${max_loss:+.1f}/t</div>
                 <div class='label'>Maximum disadvantage</div>
             </div>
             """, unsafe_allow_html=True)
@@ -699,141 +770,199 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
-            with st.expander("Detailed Quarterly Data"):
+            with st.expander("Detailed Data"):
                 st.dataframe(bt_filtered[['Period', 'Market', 'Formula', 'PnL']].round(1),
                              use_container_width=True, hide_index=True)
         
         # ============================================================
-        # DECISION SECTION
+        # DECISION SECTION — Apply Selected Formula to Monte Carlo
         # ============================================================
         st.markdown("---")
-        st.markdown("### Decision — Formula x Monte Carlo")
+        st.markdown("### Decision — Test Formula on Future Scenarios")
+        st.markdown(f"*Using **{formula_name}** ({selected}) with your parameters above*")
         
         results = st.session_state.get('results')
         
         if results is None:
-            st.info("Run a Monte Carlo simulation in the first tab to enable scenario-based formula analysis.")
+            st.info("Run a Monte Carlo simulation in the **first tab** to generate future market scenarios, then come back here to test your formula.")
         else:
             vol_c1, vol_c2 = st.columns([1, 3])
             annual_vol = vol_c1.number_input("Annual Volume (Kt)", 100, 5000, 750, 50, key='vol_kt')
             
-            base = load_base_data(str(FORMULA_PATH))
-            alpha = base.get('alpha', 0.7)
-            beta = base.get('beta', 0.3)
-            
-            formula_weights = {
-                'alpha': alpha, 'beta': beta, 'gamma': 0,
-                'acs_from_sulphur': base.get('acs_from_sulphur', 3.02),
-                'conversion_cost': base.get('conversion_cost', 20)
-            }
-            
             n_sc = results['all_paths'].shape[0]
             sc_idx = st.slider("Select Monte Carlo Scenario", 1, n_sc, 1, key='d_sc')
             scenario_prices = results['all_paths'][sc_idx - 1, :]
+            dates = results['dates']
             
-            scenario_result = apply_formula_to_scenario(
-                scenario_prices, results['dates'], formula_weights, floor_val, cap_val
-            )
+            # Apply the SELECTED formula to this MC scenario
+            # Build monthly-like dataframe from the MC scenario
+            scenario_df = pd.DataFrame({
+                'ACS_CFR_NAfrica': scenario_prices,
+                'Year': dates.year,
+                'Quarter': (dates.month - 1) // 3 + 1,
+                'Month': dates.month,
+                'S_CFR_ME': scenario_prices * 0.55,  # proxy: sulfur ~55% of ACS
+                'S_CFR_NA': scenario_prices * 0.50,
+                'IPP_Europe': scenario_prices * 0.95,
+                'IPP_Japan': scenario_prices * 0.90,
+                'IPP_China': scenario_prices * 0.85,
+            })
+            if 'DAP' not in scenario_df.columns:
+                scenario_df['DAP'] = params.get('dap0', 500)
+            if 'Petcoke' not in scenario_df.columns:
+                scenario_df['Petcoke'] = params.get('pc0', 140)
+            if 'Clinker' not in scenario_df.columns:
+                scenario_df['Clinker'] = params.get('clk0', 130)
+            
+            # Compute formula for this scenario
+            formula_prices = compute_fns[formula_idx](scenario_df, params, view='quarterly')
             
             monthly_vol = annual_vol * 1000 / 12
-            market_revenue = np.sum(scenario_prices * monthly_vol) / 1e6
-            formula_revenue = np.sum(scenario_result['capped'] * monthly_vol) / 1e6
-            savings = market_revenue - formula_revenue
+            n_months = len(scenario_prices)
             
+            # --- Chart: MC scenario vs formula price ---
+            if not formula_prices.empty:
+                fig_sc = go.Figure()
+                # Both use the same Period x-axis from the formula computation
+                fig_sc.add_trace(go.Scatter(
+                    x=formula_prices['Period'], y=formula_prices['Market'], mode='lines+markers',
+                    line=dict(color='#dc2626', width=2.5), marker=dict(size=5),
+                    name='MC Market (quarterly avg)',
+                    hovertemplate='<b>Market</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'))
+                fig_sc.add_trace(go.Scatter(
+                    x=formula_prices['Period'], y=formula_prices['Formula'], mode='lines+markers',
+                    line=dict(color='#2563eb', width=2.5), marker=dict(size=5),
+                    name=f'{formula_name} Price',
+                    hovertemplate='<b>Formula</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'))
+                
+                fig_sc.add_hline(y=floor_val, line=dict(color='#f59e0b', width=1.5, dash='dash'),
+                                annotation_text=f'Floor: ${floor_val}')
+                fig_sc.add_hline(y=cap_val, line=dict(color='#f59e0b', width=1.5, dash='dash'),
+                                annotation_text=f'Cap: ${cap_val}')
+                chart_layout(fig_sc, f'<b>{formula_name} Applied to MC Scenario #{sc_idx}</b>')
+                st.plotly_chart(fig_sc, use_container_width=True)
+                
+                # --- P&L on this scenario ---
+                st.plotly_chart(create_pnl_chart(formula_prices, formula_name, view_mode='quarterly'),
+                               use_container_width=True)
+            else:
+                st.warning("Could not compute formula on this scenario.")
+            
+            # --- Revenue metrics ---
+            if not formula_prices.empty:
+                avg_market_q = formula_prices['Market'].mean()
+                avg_formula_q = formula_prices['Formula'].mean()
+                avg_pnl_q = formula_prices['PnL'].mean()
+                total_market = avg_market_q * annual_vol * 1000 / 1e6
+                total_formula = avg_formula_q * annual_vol * 1000 / 1e6
+                savings = total_market - total_formula
+                
+                dc1, dc2, dc3 = st.columns(3)
+                dc1.markdown(f"""
+                <div class='formula-card'>
+                    <h4>Market Cost</h4>
+                    <div class='value'>${total_market:.1f}M/yr</div>
+                    <div class='label'>Avg market price: ${avg_market_q:.0f}/t</div>
+                </div>
+                """, unsafe_allow_html=True)
+                dc2.markdown(f"""
+                <div class='formula-card'>
+                    <h4>Formula Cost</h4>
+                    <div class='value'>${total_formula:.1f}M/yr</div>
+                    <div class='label'>Avg formula price: ${avg_formula_q:.0f}/t</div>
+                </div>
+                """, unsafe_allow_html=True)
+                clr = '#16a34a' if savings >= 0 else '#dc2626'
+                dc3.markdown(f"""
+                <div class='formula-card'>
+                    <h4>{'Savings' if savings >= 0 else 'Extra Cost'}</h4>
+                    <div class='value' style='color: {clr}'>${savings:+.1f}M/yr</div>
+                    <div class='label'>at {annual_vol} Kt/yr</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # --- Multi-scenario risk analysis ---
+            st.markdown("### Risk Analysis — All MC Scenarios")
             all_savings = []
-            for i in range(n_sc):
+            sample_size = min(n_sc, 200)  # Cap for speed
+            for i in range(sample_size):
                 sc_prices = results['all_paths'][i, :]
-                sc_result = apply_formula_to_scenario(sc_prices, results['dates'], formula_weights, floor_val, cap_val)
-                sc_market_rev = np.sum(sc_prices * monthly_vol) / 1e6
-                sc_formula_rev = np.sum(sc_result['capped'] * monthly_vol) / 1e6
-                all_savings.append(sc_market_rev - sc_formula_rev)
+                sc_df = pd.DataFrame({
+                    'ACS_CFR_NAfrica': sc_prices,
+                    'Year': dates.year,
+                    'Quarter': (dates.month - 1) // 3 + 1,
+                    'Month': dates.month,
+                    'S_CFR_ME': sc_prices * 0.55,
+                    'S_CFR_NA': sc_prices * 0.50,
+                    'IPP_Europe': sc_prices * 0.95,
+                    'IPP_Japan': sc_prices * 0.90,
+                    'IPP_China': sc_prices * 0.85,
+                })
+                if 'DAP' not in sc_df.columns:
+                    sc_df['DAP'] = params.get('dap0', 500)
+                if 'Petcoke' not in sc_df.columns:
+                    sc_df['Petcoke'] = params.get('pc0', 140)
+                if 'Clinker' not in sc_df.columns:
+                    sc_df['Clinker'] = params.get('clk0', 130)
+                
+                sc_result = compute_fns[formula_idx](sc_df, params, view='quarterly')
+                if not sc_result.empty:
+                    sc_avg_pnl = sc_result['PnL'].mean()
+                    sc_savings = sc_avg_pnl * annual_vol * 1000 / 1e6
+                    all_savings.append(sc_savings)
+            
             all_savings = np.array(all_savings)
-            
-            dc1, dc2, dc3, dc4 = st.columns(4)
-            
-            dc1.markdown(f"""
-            <div class='formula-card'>
-                <h4>Market Cost</h4>
-                <div class='value'>${market_revenue:.1f}M</div>
-                <div class='label'>Spot prices (Scenario #{sc_idx})</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            dc2.markdown(f"""
-            <div class='formula-card'>
-                <h4>Formula Cost</h4>
-                <div class='value'>${formula_revenue:.1f}M</div>
-                <div class='label'>Under blended formula</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            clr = '#00d26a' if savings >= 0 else '#ff4757'
-            dc3.markdown(f"""
-            <div class='formula-card'>
-                <h4>This Scenario</h4>
-                <div class='value' style='color: {clr}'>${savings:+.1f}M</div>
-                <div class='label'>{'Savings' if savings >= 0 else 'Extra cost'} vs market</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            avg_save = np.mean(all_savings)
-            clr_avg = '#00d26a' if avg_save >= 0 else '#ff4757'
-            dc4.markdown(f"""
-            <div class='formula-card'>
-                <h4>Expected (All {n_sc})</h4>
-                <div class='value' style='color: {clr_avg}'>${avg_save:+.1f}M</div>
-                <div class='label'>Mean savings across MC paths</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.plotly_chart(create_scenario_formula_chart(scenario_result, 
-                            f"{results['product']} - Scenario #{sc_idx}"), use_container_width=True)
-            
-            # Risk analysis
-            st.markdown("### Risk Analysis")
-            risk_cols = st.columns(3)
-            p5 = np.percentile(all_savings, 5)
-            p95 = np.percentile(all_savings, 95)
-            prob_save = np.mean(all_savings >= 0) * 100
-            
-            risk_cols[0].markdown(f"""
-            <div class='formula-card'>
-                <h4>Best Case (P95)</h4>
-                <div class='value' style='color: #00d26a'>${p95:+.1f}M</div>
-                <div class='label'>Savings in favorable scenario</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            risk_cols[1].markdown(f"""
-            <div class='formula-card'>
-                <h4>Worst Case (P5)</h4>
-                <div class='value' style='color: {"#00d26a" if p5 >= 0 else "#ff4757"}'>${p5:+.1f}M</div>
-                <div class='label'>Cost in adverse scenario</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            risk_cols[2].markdown(f"""
-            <div class='formula-card'>
-                <h4>Probability of Savings</h4>
-                <div class='value' style='color: {"#00d26a" if prob_save >= 50 else "#ff4757"}'>{prob_save:.0f}%</div>
-                <div class='label'>of scenarios show net savings</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            fig_dist = go.Figure()
-            fig_dist.add_trace(go.Histogram(x=all_savings, nbinsx=50,
-                                             marker=dict(color='#4a8cff', line=dict(color='white', width=0.5)), opacity=0.8))
-            fig_dist.add_vline(x=0, line=dict(color='white', width=2))
-            fig_dist.add_vline(x=avg_save, line=dict(color='#ffaa33', width=2, dash='dash'),
-                              annotation_text=f'Mean: ${avg_save:+.1f}M')
-            chart_layout(fig_dist, '<b>Savings Distribution Across All Scenarios</b>',
-                        height=350, yaxis_title='Frequency')
-            st.plotly_chart(fig_dist, use_container_width=True)
+            if len(all_savings) > 0:
+                avg_save = np.mean(all_savings)
+                p5 = np.percentile(all_savings, 5)
+                p95 = np.percentile(all_savings, 95)
+                prob_save = np.mean(all_savings >= 0) * 100
+                
+                risk_cols = st.columns(4)
+                clr_avg = '#16a34a' if avg_save >= 0 else '#dc2626'
+                risk_cols[0].markdown(f"""
+                <div class='formula-card'>
+                    <h4>Expected Savings</h4>
+                    <div class='value' style='color: {clr_avg}'>${avg_save:+.1f}M/yr</div>
+                    <div class='label'>Mean across {sample_size} scenarios</div>
+                </div>
+                """, unsafe_allow_html=True)
+                risk_cols[1].markdown(f"""
+                <div class='formula-card'>
+                    <h4>Best Case (P95)</h4>
+                    <div class='value' style='color: #16a34a'>${p95:+.1f}M/yr</div>
+                    <div class='label'>Favorable scenario</div>
+                </div>
+                """, unsafe_allow_html=True)
+                risk_cols[2].markdown(f"""
+                <div class='formula-card'>
+                    <h4>Worst Case (P5)</h4>
+                    <div class='value' style='color: {"#16a34a" if p5 >= 0 else "#dc2626"}'>${p5:+.1f}M/yr</div>
+                    <div class='label'>Adverse scenario</div>
+                </div>
+                """, unsafe_allow_html=True)
+                risk_cols[3].markdown(f"""
+                <div class='formula-card'>
+                    <h4>Prob. of Savings</h4>
+                    <div class='value' style='color: {"#16a34a" if prob_save >= 50 else "#dc2626"}'>{prob_save:.0f}%</div>
+                    <div class='label'>of scenarios show savings</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                fig_dist = go.Figure()
+                fig_dist.add_trace(go.Histogram(x=all_savings, nbinsx=50,
+                    marker=dict(color='#2563eb', line=dict(color='white', width=0.5)), opacity=0.8))
+                fig_dist.add_vline(x=0, line=dict(color='#94a3b8', width=2))
+                fig_dist.add_vline(x=avg_save, line=dict(color='#f59e0b', width=2, dash='dash'),
+                                  annotation_text=f'Mean: ${avg_save:+.1f}M')
+                chart_layout(fig_dist, f'<b>Savings Distribution — {formula_name} on {sample_size} MC Scenarios</b>',
+                            height=350, yaxis_title='Frequency')
+                st.plotly_chart(fig_dist, use_container_width=True)
     
     # Footer
     st.markdown("---")
     st.markdown("""
-    <div style='text-align: center; color: #8fa3bf; font-size: 0.85rem;'>
+    <div style='text-align: center; color: #5a6a85; font-size: 0.85rem;'>
         Built by Mohammed ELARIDI | Data: CRU Outlook & ACS Pricing Simulator
     </div>
     """, unsafe_allow_html=True)
