@@ -1,7 +1,7 @@
 """
 CRU Commodity Price Simulator & Formula Decision Platform
 Tabs: Monte Carlo Simulation | Formula Lab & Decision
-Author: Mohammed ELARIDI
+Author: Mohammed ELABRIDI
 """
 
 import streamlit as st
@@ -20,6 +20,11 @@ from formula_engine import (
     load_phosphate_prices,
     compute_formula_1, compute_formula_2, compute_formula_3,
     compute_formula_4, compute_formula_5, compute_formula_6,
+)
+from correlation_engine import (
+    load_historical_monthly, load_generated_yearly,
+    compute_correlation_matrix, apply_correlated_adjustment,
+    expand_yearly_to_monthly, CORR_VARS,
 )
 
 st.set_page_config(
@@ -402,12 +407,26 @@ def main():
     """, unsafe_allow_html=True)
     
     DATA_PATH = Path(__file__).parent / "Formules de prix_ACS.xlsx"
-    NEW_FORMULA_PATH = Path(__file__).parent / "1202_1203_ACS Pricing simulator.xlsx"
-    OLD_FORMULA_PATH = Path(__file__).parent / "0902_1700_ACS Pricing simulator_MG (1).xlsx"
-    FORMULA_PATH = NEW_FORMULA_PATH if NEW_FORMULA_PATH.exists() else OLD_FORMULA_PATH
+    NEW_FORMULA_PATH = Path(__file__).parent / "1202_2001_ACS Pricing simulator.xlsx"
+    OLD_FORMULA_PATH = Path(__file__).parent / "1202_1203_ACS Pricing simulator.xlsx"
+    LEGACY_FORMULA_PATH = Path(__file__).parent / "0902_1700_ACS Pricing simulator_MG (1).xlsx"
+    FORMULA_PATH = NEW_FORMULA_PATH if NEW_FORMULA_PATH.exists() else (OLD_FORMULA_PATH if OLD_FORMULA_PATH.exists() else LEGACY_FORMULA_PATH)
     
     if not DATA_PATH.exists():
         DATA_PATH = Path("/Users/elabridi/Desktop/domaine project/Formules de prix_ACS.xlsx")
+    
+    # Load correlation data from new Excel
+    _corr_data_loaded = False
+    _corr_matrix = None
+    _generated_yearly = None
+    if NEW_FORMULA_PATH.exists():
+        try:
+            _hist_monthly = load_historical_monthly(str(NEW_FORMULA_PATH))
+            _generated_yearly = load_generated_yearly(str(NEW_FORMULA_PATH))
+            _corr_matrix = compute_correlation_matrix(_hist_monthly)
+            _corr_data_loaded = True
+        except Exception as e:
+            st.warning(f"Could not load correlation data: {e}")
     
     tab1, tab2 = st.tabs(["Monte Carlo Simulation", "Formula Lab & Decision"])
     
@@ -420,14 +439,33 @@ def main():
             st.markdown("---")
             
             st.markdown("### Product")
-            product_type = st.selectbox("Commodity", ['Sulfuric Acid', 'Sulphur'], key='prod')
-            regions = {
-                'Sulfuric Acid': ['CFR US Gulf', 'CFR Brazil', 'FOB Japan/South Korea (Spot)',
-                                 'FOB China', 'CFR Chile – contract', 'FOB NW Europe', 'CFR India'],
-                'Sulphur': ['FOB Vancouver (spot)', 'FOB Middle East (spot)', 'CFR China  (spot)',
-                           'CFR Brazil (spot)', 'CFR North Africa (contract)', 'FOB Tampa (contract)']
+            # Variables from the Monthly_prices_forecast_direct sheet
+            VARIABLE_OPTIONS = [
+                'ACS CFR North Africa',
+                'ACS NW EU',
+                'ACS Japan',
+                'ACS China',
+                'S ME to CFR',
+                'S North Africa to CFR Morocco',
+                'Smooth 3 mois S ME to CFR',
+                'Smooth S North Africa to CFR Morocco',
+                'DAP Bulk North Africa',
+            ]
+            # Map each variable to (product_code, CRU_outlook_column)
+            VARIABLE_TO_CRU = {
+                'ACS CFR North Africa': ('ACS', 'CFR US Gulf'),
+                'ACS NW EU': ('ACS', 'FOB NW Europe'),
+                'ACS Japan': ('ACS', 'FOB Japan/South Korea (Spot)'),
+                'ACS China': ('ACS', 'FOB China'),
+                'S ME to CFR': ('S', 'FOB Middle East (spot)'),
+                'S North Africa to CFR Morocco': ('S', 'CFR North Africa (contract)'),
+                'Smooth 3 mois S ME to CFR': ('S', 'FOB Middle East (spot)'),
+                'Smooth S North Africa to CFR Morocco': ('S', 'CFR North Africa (contract)'),
+                'DAP Bulk North Africa': ('ACS', 'CFR US Gulf'),
             }
-            region = st.selectbox("Market / Region", regions[product_type], key='region')
+            selected_variable = st.selectbox("Variable", VARIABLE_OPTIONS, key='prod_var')
+            product_code_map, region = VARIABLE_TO_CRU[selected_variable]
+            product_type = 'Sulfuric Acid' if product_code_map == 'ACS' else 'Sulphur'
             
             st.markdown("---")
             st.markdown("### Horizon")
@@ -578,10 +616,19 @@ def main():
         view_key = 'annual' if view_mode == 'Annual' else 'quarterly'
         
         # LOAD DATA (backtest only — historical up to today)
-        if use_new:
-            hist = load_historical_prices_extended(str(NEW_FORMULA_PATH))
+        if _corr_data_loaded and _hist_monthly is not None:
+            hist = _hist_monthly.copy()
+            # Add IPP columns for compatibility with F3
+            if 'IPP_Europe' not in hist.columns:
+                hist['IPP_Europe'] = hist.get('ACS_NWE', 0)
+            if 'IPP_Japan' not in hist.columns:
+                hist['IPP_Japan'] = hist.get('ACS_Japan', 0)
+            if 'IPP_China' not in hist.columns:
+                hist['IPP_China'] = hist.get('ACS_China', 0)
+        elif OLD_FORMULA_PATH.exists():
+            hist = load_historical_prices_extended(str(OLD_FORMULA_PATH))
         else:
-            hist = load_historical_prices(str(OLD_FORMULA_PATH))
+            hist = load_historical_prices(str(LEGACY_FORMULA_PATH))
         phos = load_phosphate_prices(str(FORMULA_PATH))
         
         # Filter to historical only (up to current year)
@@ -802,26 +849,63 @@ def main():
             scenario_prices = results['all_paths'][sc_idx - 1, :]
             dates = results['dates']
             
-            scenario_df = pd.DataFrame({
-                'ACS_CFR_NAfrica': scenario_prices,
-                'Year': dates.year,
-                'Quarter': (dates.month - 1) // 3 + 1,
-                'Month': dates.month,
-                'S_CFR_ME': scenario_prices * 0.55,  # proxy: sulfur ~55% of ACS
-                'S_CFR_NA': scenario_prices * 0.50,
-                'IPP_Europe': scenario_prices * 0.95,
-                'IPP_Japan': scenario_prices * 0.90,
-                'IPP_China': scenario_prices * 0.85,
-            })
+            # Build scenario from generated data + MC price variation
+            if _corr_data_loaded and _generated_yearly is not None:
+                gen_monthly = expand_yearly_to_monthly(_generated_yearly)
+                n_months = len(scenario_prices)
+                # Build a lookup from generated monthly data indexed by (year, month)
+                gen_monthly['_ym'] = gen_monthly['Year'].astype(int) * 100 + gen_monthly['Month'].astype(int)
+                gen_lookup = gen_monthly.set_index('_ym')
+                # Create scenario_df aligned to MC dates
+                mc_years = dates.year
+                mc_months = dates.month
+                mc_ym = mc_years * 100 + mc_months
+                # Merge by year-month; missing months get NaN then ffill/bfill
+                scenario_df = gen_lookup.reindex(mc_ym).reset_index(drop=True)
+                # Fill months outside generated range (2025 or beyond 2035)
+                scenario_df = scenario_df.ffill().bfill()
+                # Overlay MC ACS price variation
+                scenario_df['ACS_CFR_NAfrica'] = scenario_prices
+                # Apply correlated adjustments based on ACS deviation
+                base_acs_lookup = gen_lookup['ACS_CFR_NAfrica'].reindex(mc_ym).values
+                base_acs_lookup = pd.Series(base_acs_lookup).ffill().bfill().values
+                for idx_row in range(n_months):
+                    if base_acs_lookup[idx_row] > 0:
+                        acs_change = (scenario_prices[idx_row] - base_acs_lookup[idx_row]) / base_acs_lookup[idx_row]
+                        for var in ['S_CFR_ME', 'S_CFR_NA', 'DAP']:
+                            if var in scenario_df.columns and var in _corr_matrix.columns:
+                                corr_val = _corr_matrix.loc['ACS_CFR_NAfrica', var] if 'ACS_CFR_NAfrica' in _corr_matrix.index else 0.7
+                                noise = np.random.uniform(-0.10, 0.10)
+                                scenario_df.loc[scenario_df.index[idx_row], var] *= (1 + corr_val * acs_change + noise * abs(acs_change))
+                scenario_df['Year'] = mc_years
+                scenario_df['Quarter'] = (mc_months - 1) // 3 + 1
+                scenario_df['Month'] = mc_months
+                # IPP proxies from ACS
+                scenario_df['IPP_Europe'] = scenario_prices * 0.95
+                scenario_df['IPP_Japan'] = scenario_prices * 0.90
+                scenario_df['IPP_China'] = scenario_prices * 0.85
+            else:
+                # Fallback to synthetic proxies
+                scenario_df = pd.DataFrame({
+                    'ACS_CFR_NAfrica': scenario_prices,
+                    'Year': dates.year,
+                    'Quarter': (dates.month - 1) // 3 + 1,
+                    'Month': dates.month,
+                    'S_CFR_ME': scenario_prices * 0.55,
+                    'S_CFR_NA': scenario_prices * 0.50,
+                    'IPP_Europe': scenario_prices * 0.95,
+                    'IPP_Japan': scenario_prices * 0.90,
+                    'IPP_China': scenario_prices * 0.85,
+                })
             if 'DAP' not in scenario_df.columns:
                 scenario_df['DAP'] = params.get('dap0', 500)
             if pc_clk_editable and petcoke_outlook:
                 scenario_df['Petcoke'] = scenario_df['Year'].map(petcoke_outlook).fillna(params.get('pc0', 140))
-            else:
+            elif 'Petcoke' not in scenario_df.columns:
                 scenario_df['Petcoke'] = params.get('pc0', 140)
             if pc_clk_editable and clinker_outlook:
                 scenario_df['Clinker'] = scenario_df['Year'].map(clinker_outlook).fillna(params.get('clk0', 130))
-            else:
+            elif 'Clinker' not in scenario_df.columns:
                 scenario_df['Clinker'] = params.get('clk0', 130)
             
             # Compute formula for this scenario
@@ -895,28 +979,48 @@ def main():
             st.markdown("### Risk Analysis — All MC Scenarios")
             all_savings = []
             sample_size = min(n_sc, 200)  # Cap for speed
+            # Pre-compute generated monthly data outside the loop
+            if _corr_data_loaded and _generated_yearly is not None:
+                _gen_m_risk = expand_yearly_to_monthly(_generated_yearly)
+                _gen_m_risk['_ym'] = _gen_m_risk['Year'].astype(int) * 100 + _gen_m_risk['Month'].astype(int)
+                _gen_lookup_risk = _gen_m_risk.set_index('_ym')
+                _mc_ym_risk = dates.year * 100 + dates.month
+            else:
+                _gen_lookup_risk = None
             for i in range(sample_size):
                 sc_prices = results['all_paths'][i, :]
-                sc_df = pd.DataFrame({
-                    'ACS_CFR_NAfrica': sc_prices,
-                    'Year': dates.year,
-                    'Quarter': (dates.month - 1) // 3 + 1,
-                    'Month': dates.month,
-                    'S_CFR_ME': sc_prices * 0.55,
-                    'S_CFR_NA': sc_prices * 0.50,
-                    'IPP_Europe': sc_prices * 0.95,
-                    'IPP_Japan': sc_prices * 0.90,
-                    'IPP_China': sc_prices * 0.85,
-                })
+                n_months = len(sc_prices)
+                if _gen_lookup_risk is not None:
+                    sc_df = _gen_lookup_risk.reindex(_mc_ym_risk).reset_index(drop=True)
+                    sc_df = sc_df.ffill().bfill()
+                    sc_df['ACS_CFR_NAfrica'] = sc_prices
+                    sc_df['Year'] = dates.year
+                    sc_df['Quarter'] = (dates.month - 1) // 3 + 1
+                    sc_df['Month'] = dates.month
+                    sc_df['IPP_Europe'] = sc_prices * 0.95
+                    sc_df['IPP_Japan'] = sc_prices * 0.90
+                    sc_df['IPP_China'] = sc_prices * 0.85
+                else:
+                    sc_df = pd.DataFrame({
+                        'ACS_CFR_NAfrica': sc_prices,
+                        'Year': dates.year,
+                        'Quarter': (dates.month - 1) // 3 + 1,
+                        'Month': dates.month,
+                        'S_CFR_ME': sc_prices * 0.55,
+                        'S_CFR_NA': sc_prices * 0.50,
+                        'IPP_Europe': sc_prices * 0.95,
+                        'IPP_Japan': sc_prices * 0.90,
+                        'IPP_China': sc_prices * 0.85,
+                    })
                 if 'DAP' not in sc_df.columns:
                     sc_df['DAP'] = params.get('dap0', 500)
                 if pc_clk_editable and petcoke_outlook:
                     sc_df['Petcoke'] = sc_df['Year'].map(petcoke_outlook).fillna(params.get('pc0', 140))
-                else:
+                elif 'Petcoke' not in sc_df.columns:
                     sc_df['Petcoke'] = params.get('pc0', 140)
                 if pc_clk_editable and clinker_outlook:
                     sc_df['Clinker'] = sc_df['Year'].map(clinker_outlook).fillna(params.get('clk0', 130))
-                else:
+                elif 'Clinker' not in sc_df.columns:
                     sc_df['Clinker'] = params.get('clk0', 130)
                 
                 sc_result = compute_fns[formula_idx](sc_df, params, view='quarterly')
