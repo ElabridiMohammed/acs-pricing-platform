@@ -1,0 +1,286 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{array}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true, linkcolor=blue!70!black, urlcolor=blue!70!black}
+
+\definecolor{cruRed}{HTML}{DC143C}
+\definecolor{simBlue}{HTML}{1E90FF}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textit{Documentation Technique}}
+\lhead{\textbf{CRU Price Simulator}}
+\rfoot{Page \thepage}
+
+\title{
+    \vspace{-1cm}
+    \textbf{\LARGE Simulateur de Prix CRU} \\[0.3cm]
+    \large Application Streamlit pour la Projection Stochastique \\
+    des Prix de l'Acide Sulfurique \& du Soufre \\[0.5cm]
+    \normalsize \textit{(Parce qu'apparemment, prévoir les prix des commodités,}\\
+    \textit{c'est pas assez stressant comme ça)}
+}
+\author{
+    \textbf{Direction Achats Matières Premières} \\
+    Département Data \& Analytics \\[0.3cm]
+    \small Version 1.0 --- Janvier 2026
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1cm}
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Résumé Exécutif} \\[0.2cm]
+Ce document présente le \textbf{CRU Commodity Price Simulator}, un outil Python/Streamlit pour simuler des scénarios de prix futurs. L'application intègre de la volatilité stochastique et des chocs de marché (<<~Black Swans~>>) pour générer des projections réalistes.
+
+\textbf{TL;DR} : On prend les prévisions CRU, on ajoute du chaos mathématique calibré, et on obtient des scénarios plus proches de la réalité qu'une simple moyenne.
+}}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Introduction}
+% ============================================================================
+
+Bon, commençons par le commencement. Vous avez probablement reçu ce document parce que quelqu'un vous a dit : \textit{<<~Eh, on a un nouveau truc pour les prévisions de prix, faut que tu regardes~>>}.
+
+L'idée derrière cette application est simple (enfin, relativement) : les prévisions officielles CRU c'est bien, mais ça ne capture pas la \textbf{réalité chaotique} des marchés. Quand une fonderie chilienne décide de faire une maintenance imprévue, les prix ne suivent pas gentiment la courbe prévue --- ils font n'importe quoi pendant quelques mois.
+
+\subsection{Pourquoi cette application ?}
+
+\begin{itemize}
+    \item \textbf{Le problème} : Les outlooks CRU donnent une tendance moyenne, pas les scénarios extrêmes
+    \item \textbf{La solution} : Simuler des milliers de trajectoires possibles avec Monte Carlo
+    \item \textbf{Le bonus} : Pouvoir injecter des <<~spikes~>> (chocs de prix) à volonté
+\end{itemize}
+
+\subsection{Ce que l'application fait concrètement}
+
+Elle prend les données Excel du CRU, applique un modèle stochastique, et génère :
+\begin{enumerate}
+    \item Une \textbf{courbe de base} (l'outlook officiel)
+    \item Une \textbf{zone de risque} (intervalle de confiance à 95\%)
+    \item Un \textbf{scénario simulé} avec spikes et volatilité
+\end{enumerate}
+
+% ============================================================================
+\section{Le Modèle Mathématique}
+% ============================================================================
+
+\textit{(Cette section contient des maths. Respirez un bon coup.)}
+
+\subsection{Formule Générale}
+
+Le modèle suit l'équation suivante :
+
+\begin{equation}
+\boxed{
+    P(t) = T(t) \times e^{\sigma \cdot W(t)} \times (1 + S(t))
+}
+\end{equation}
+
+Où :
+\begin{itemize}
+    \item $P(t)$ : Prix simulé au mois $t$
+    \item $T(t)$ : Tendance interpolée depuis l'Outlook CRU
+    \item $\sigma$ : Volatilité annualisée (calibrée sur l'historique ou paramétrable)
+    \item $W(t)$ : Mouvement Brownien \textbf{lissé} (avec inertie)
+    \item $S(t)$ : Contribution des spikes avec décroissance
+\end{itemize}
+
+\subsection{Mouvement Brownien Lissé (AR-1)}
+
+Le problème avec le Brownien classique, c'est que ça donne des courbes qui ressemblent à un électrocardiogramme. Pas très réaliste pour les commodités qui ont de l'\textit{inertie}.
+
+On utilise donc un processus auto-régressif :
+
+\begin{equation}
+X(t) = \alpha \cdot X(t-1) + (1-\alpha) \cdot \epsilon(t)
+\end{equation}
+
+Avec $\alpha = 0.7$ par défaut (le <<~Curve Smoothing~>> dans l'interface).
+
+\subsection{Spikes avec Décroissance (<<~Shark Fin~>>)}
+
+Quand un spike arrive (genre, la Chine qui ferme ses frontières ou un ouragan sur le Golfe du Mexique), le prix ne redescend pas instantanément. Il y a une \textbf{persistance}.
+
+La décroissance exponentielle :
+\begin{equation}
+S(t+k) = I \times e^{-3 \cdot k / P}
+\end{equation}
+
+Où :
+\begin{itemize}
+    \item $I$ : Intensité du spike (ex: +50\%)
+    \item $P$ : Persistance en mois (ex: 6 mois)
+    \item $k$ : Mois depuis le spike
+\end{itemize}
+
+\textbf{Résultat visuel} : Une forme d'aileron de requin (<<~Shark Fin~>>) --- montée rapide, descente progressive. Beaucoup plus réaliste qu'un pic vertical qui retombe comme un soufflé raté.
+
+% ============================================================================
+\section{Guide d'Utilisation}
+% ============================================================================
+
+\subsection{Lancement de l'Application}
+
+\begin{verbatim}
+$ cd "/Users/.../domaine project"
+$ streamlit run app.py
+\end{verbatim}
+
+L'application s'ouvre automatiquement sur \url{http://localhost:8501}.
+
+\subsection{Interface et Paramètres}
+
+\subsubsection{Barre Latérale (Sidebar)}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Paramètre} & \textbf{Description} & \textbf{Par défaut} \\
+\hline
+Commodity & Acide Sulfurique ou Soufre & Sulfuric Acid \\
+Market / Region & Benchmark géographique & CFR US Gulf \\
+Start/End Year & Horizon de projection & 2025-2030 \\
+Volatility Mult. & Ajustement de la vol. & 1.0 \\
+Spike Frequency & Nombre de spikes/an & 0.5 \\
+Spike Intensity & Amplitude du spike (\%) & 30\% \\
+Spike Persistence & Durée (mois) & 4 mois \\
+Decay Type & Type de décroissance & Exponential \\
+Curve Smoothing & Inertie des courbes & 0.70 \\
+Monte Carlo Paths & Nombre de simulations & 500 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Zone Principale}
+
+Après avoir cliqué sur \textbf{<<~Run Simulation~>>}, vous obtenez :
+
+\begin{enumerate}
+    \item \textbf{Métriques clés} : Prix moyen outlook vs simulé, percentiles, etc.
+    \item \textbf{Graphique de projection} avec trois éléments visuels :
+    \begin{itemize}
+        \item \textcolor{cruRed}{\textbf{Ligne rouge pointillée}} : CRU Outlook (budget)
+        \item \textbf{Bande grise} : Zone de risque (IC 95\%)
+        \item \textcolor{simBlue}{\textbf{Ligne bleue solide}} : Scénario simulé avec chocs
+    \end{itemize}
+    \item \textbf{Distributions} : Histogrammes des prix par année
+    \item \textbf{Export CSV} : Pour vos analyses Excel
+\end{enumerate}
+
+% ============================================================================
+\section{Interprétation des Résultats}
+% ============================================================================
+
+\subsection{Lecture du Graphique}
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Comment lire le graphique :}
+\begin{itemize}
+    \item La \textbf{ligne rouge pointillée} c'est votre \textit{budget} --- ce que CRU prévoit officiellement
+    \item La \textbf{zone grise} c'est le \textit{champ des possibles} --- là où le prix pourrait aller dans 95\% des cas
+    \item La \textbf{ligne bleue} c'est un \textit{scénario possible} --- ce qui pourrait arriver si des spikes se produisent
+\end{itemize}
+}}
+
+\subsection{Exemple de Scénario}
+
+Imaginons les paramètres suivants :
+\begin{itemize}
+    \item Spike Frequency : 1.5/an (on est pessimistes)
+    \item Spike Intensity : 50\% (gros chocs)
+    \item Persistence : 6 mois
+\end{itemize}
+
+Le graphique montrera des <<~vagues~>> où le prix monte brutalement puis redescend sur 6 mois. C'est ce qu'on observe typiquement lors de :
+\begin{itemize}
+    \item Arrêts de fonderies (maintenance ou grèves)
+    \item Perturbations logistiques (problèmes de fret)
+    \item Chocs géopolitiques (sanctions, etc.)
+\end{itemize}
+
+% ============================================================================
+\section{Limitations et Avertissements}
+% ============================================================================
+
+\textit{(Parce qu'aucun modèle n'est parfait, et celui-ci ne fait pas exception)}
+
+\begin{enumerate}
+    \item \textbf{Ce n'est pas de la prédiction} : C'est de la simulation stochastique. On génère des scénarios \textit{plausibles}, pas \textit{certains}.
+    
+    \item \textbf{Les spikes sont aléatoires} : L'application ne prédit pas \textit{quand} un spike va arriver, juste ce qui \textit{pourrait} se passer s'il arrivait.
+    
+    \item \textbf{La calibration dépend de l'historique} : Si le marché change structurellement, les volatilités historiques peuvent être trompeuses.
+    
+    \item \textbf{Garbage in, garbage out} : La qualité des résultats dépend de la qualité des données CRU en entrée.
+\end{enumerate}
+
+\vspace{0.5cm}
+\noindent\fcolorbox{red}{red!10}{\parbox{\textwidth}{
+\textbf{Disclaimer :} Cet outil est fourni à titre indicatif pour l'aide à la décision. Il ne constitue en aucun cas une recommandation d'investissement ou une garantie de performance future.
+
+\textit{(Traduction : si vous perdez de l'argent en vous basant uniquement sur ce modèle, c'est pas notre faute)}
+}}
+
+% ============================================================================
+\section{Support Technique}
+% ============================================================================
+
+Si l'application plante, ne s'ouvre pas, ou fait des choses bizarres :
+
+\begin{enumerate}
+    \item Vérifier que Python 3.8+ est installé
+    \item Vérifier que les dépendances sont installées :
+\begin{verbatim}
+pip install streamlit pandas numpy plotly scipy openpyxl
+\end{verbatim}
+    \item Vérifier que le fichier Excel est dans le même dossier
+    \item En dernier recours : éteindre et rallumer (oui, ça marche parfois)
+\end{enumerate}
+
+% ============================================================================
+\section{Conclusion}
+% ============================================================================
+
+Voilà, vous avez maintenant un outil qui permet de :
+\begin{itemize}
+    \item Visualiser les projections CRU avec une couche de réalisme
+    \item Tester des scénarios de stress (<<~et si le marché pétait un câble ?~>>)
+    \item Avoir des intervalles de confiance pour vos budgets
+    \item Impressionner en réunion avec des graphiques interactifs
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{center}
+\textit{<<~Tous les modèles sont faux, mais certains sont utiles.~>>} \\
+--- George Box (et probablement votre prof de stats aussi)
+\end{center}
+
+\vspace{1cm}
+
+\hrule
+\vspace{0.3cm}
+\small
+\textbf{Document généré automatiquement} --- Pour toute question technique, contacter l'équipe Data \& Analytics.
+
+\end{document}

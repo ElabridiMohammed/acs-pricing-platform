@@ -205,9 +205,7 @@ def load_base_data(xlsx_path: str) -> dict:
     }
 
 
-# ============================================================
-# AGGREGATION HELPERS
-# ============================================================
+# --- AGGREGATION HELPERS ---
 
 def _quarterly_series(hist: pd.DataFrame, columns: list) -> pd.DataFrame:
     """Group historical monthly data into quarterly averages."""
@@ -240,9 +238,7 @@ def _apply_floor_cap(series: pd.Series, floor: float, cap: float) -> pd.Series:
     return series.clip(lower=floor, upper=cap)
 
 
-# ============================================================
-# INDIVIDUAL FORMULA COMPUTATIONS
-# ============================================================
+# --- INDIVIDUAL FORMULA COMPUTATIONS ---
 
 def compute_formula_1(hist: pd.DataFrame, params: dict, view: str = 'quarterly') -> pd.DataFrame:
     """F1: Sulfur Indexing Only — P = a × (S_weighted × conv_ratio + prod_cost) + b"""
@@ -453,9 +449,7 @@ def compute_formula_6(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
     return q.dropna(subset=['Market', 'Formula'])
 
 
-# ============================================================
-# FORECAST FORMULA COMPUTATIONS (annual data)
-# ============================================================
+# --- FORECAST FORMULA COMPUTATIONS (annual data) ---
 
 def compute_forecast(forecast_df: pd.DataFrame, formula_idx: int, params: dict) -> pd.DataFrame:
     """Compute formula on annual forecast data. Returns DataFrame with Year, Market, Formula, PnL."""

@@ -1,0 +1,437 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage{booktabs}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true, linkcolor=blue!70!black, urlcolor=blue!70!black}
+
+\definecolor{codeblue}{HTML}{1E90FF}
+\definecolor{mathgreen}{HTML}{2E8B57}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textit{Documentation Technique Simplifiée}}
+\lhead{\textbf{CRU Price Simulator}}
+\rfoot{Page \thepage}
+
+\setlength{\headheight}{14.5pt}
+
+\title{
+    \vspace{-1cm}
+    \textbf{\LARGE Simulateur de Prix CRU} \\[0.5cm]
+    \Large Guide Technique Simplifié \\[0.3cm]
+    \large Mathématiques, Code \& Interface \\[0.5cm]
+    \normalsize \textit{Expliqué comme si vous aviez 5 ans}\\
+    \textit{(bon, peut-être 15 ans avec des notions de stats)}
+}
+\author{
+    \textbf{Département Data \& Analytics} \\[0.3cm]
+    \small Version 2.0 --- Janvier 2026
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{0.5cm}
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Ce document explique :}
+\begin{enumerate}
+    \item Comment le modèle mathématique fonctionne (en termes simples)
+    \item Ce que fait chaque ligne de code importante
+    \item À quoi sert chaque slider/paramètre dans l'interface
+\end{enumerate}
+}}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{L'Idée Générale (En 30 Secondes)}
+% ============================================================================
+
+Imaginez que vous voulez savoir combien coûtera l'acide sulfurique dans 3 ans.
+
+\textbf{Option 1 :} Regarder la prévision CRU $\rightarrow$ <<~140 \$/t~>> \\
+\textbf{Problème :} Le marché ne suit jamais exactement les prévisions.
+
+\textbf{Option 2 (ce qu'on fait) :} 
+\begin{enumerate}
+    \item Prendre la prévision CRU comme <<~tendance de base~>>
+    \item Ajouter du <<~bruit~>> aléatoire (volatilité du marché)
+    \item Ajouter des <<~chocs~>> possibles (spikes)
+    \item Répéter 500 fois pour voir toutes les possibilités
+\end{enumerate}
+
+\textbf{Résultat :} Au lieu d'UN chiffre, on a une PLAGE de prix possibles.
+
+% ============================================================================
+\section{Le Modèle Mathématique}
+% ============================================================================
+
+\subsection{La Formule Magique}
+
+Tout le simulateur repose sur UNE formule :
+
+\begin{equation}
+\boxed{
+    \textcolor{codeblue}{Prix(t)} = \textcolor{mathgreen}{Tendance(t)} \times e^{\sigma \cdot W(t)} \times (1 + Spike(t))
+}
+\end{equation}
+
+Décomposons ça :
+
+\begin{center}
+\begin{tabular}{|c|p{10cm}|}
+\hline
+\textbf{Terme} & \textbf{Signification en français} \\
+\hline
+$Prix(t)$ & Le prix simulé au mois $t$ \\
+\hline
+$Tendance(t)$ & La prévision CRU interpolée (la ligne rouge pointillée) \\
+\hline
+$e^{\sigma \cdot W(t)}$ & Le facteur de volatilité : fait varier le prix autour de la tendance \\
+\hline
+$(1 + Spike(t))$ & Le multiplicateur de spike : +30\% si choc, sinon $\times 1$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Composant 1 : La Tendance $T(t)$}
+
+\textbf{D'où ça vient ?} Du fichier Excel CRU Outlook.
+
+\textbf{Le problème :} Les données sont annuelles (2025, 2026, 2027...) \\
+\textbf{La solution :} On interpole avec une courbe lisse (spline cubique)
+
+\textbf{En code Python :}
+\begin{verbatim}
+from scipy.interpolate import interp1d
+f = interp1d(years, prices, kind='cubic')
+monthly_trend = f(monthly_dates)
+\end{verbatim}
+
+\textbf{Résultat :} On passe de 6 points annuels à 72 points mensuels.
+
+\subsection{Composant 2 : La Volatilité $\sigma \cdot W(t)$}
+
+\textbf{C'est quoi ?} Du <<~bruit~>> aléatoire qui fait bouger le prix.
+
+\textbf{Le problème initial :} Le bruit classique (Brownien simple) fait des courbes <<~en dents de scie~>> --- pas réaliste.
+
+\textbf{La solution :} On <<~lisse~>> le bruit avec un processus AR(1) :
+
+\begin{equation}
+X(t) = \underbrace{\alpha \cdot X(t-1)}_{\text{mémoire du passé}} + \underbrace{(1-\alpha) \cdot \epsilon(t)}_{\text{nouveau choc}}
+\end{equation}
+
+\begin{itemize}
+    \item $\alpha$ = facteur de lissage (0.7 par défaut)
+    \item Plus $\alpha$ est grand, plus la courbe est <<~douce~>>
+    \item $\epsilon(t)$ = choc aléatoire normal $\sim N(0, \sigma)$
+\end{itemize}
+
+\textbf{En code Python :}
+\begin{verbatim}
+smoothed[0] = raw_shocks[0]
+for t in range(1, n_steps):
+    smoothed[t] = alpha * smoothed[t-1] + (1-alpha) * raw_shocks[t]
+\end{verbatim}
+
+\textbf{En image :}
+\begin{center}
+Sans lissage : $\sim\sim\sim\sim$ (electrocardiogramme) \\
+Avec lissage : $\smile\frown\smile$ (vagues douces)
+\end{center}
+
+\subsection{Composant 3 : Les Spikes $S(t)$}
+
+\textbf{C'est quoi ?} Des chocs de prix soudains (grèves, ouragans, sanctions...).
+
+\textbf{Comment ça marche ?}
+\begin{enumerate}
+    \item On tire au hasard si un spike arrive (probabilité = fréquence/12)
+    \item Si spike : le prix monte de $I$\% (intensité)
+    \item Puis le prix redescend progressivement sur $P$ mois (persistance)
+\end{enumerate}
+
+\textbf{La formule de décroissance :}
+
+\begin{equation}
+Spike(t+k) = I \times e^{-3 \cdot k / P}
+\end{equation}
+
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+$k=0$ (jour du spike) & $Spike = I$ (ex: +50\%) \\
+$k=P/3$ & $Spike \approx 0.37 \times I$ (+18\%) \\
+$k=P$ (fin de persistance) & $Spike \approx 0.05 \times I$ (+2.5\%) \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Forme visuelle :} <<~Aileron de requin~>> (Shark Fin) --- montée brutale, descente progressive.
+
+\textbf{En code Python :}
+\begin{verbatim}
+for k in range(persistence):
+    progress = k / persistence
+    decay = exp(-3.0 * progress)  # Decroissance exponentielle
+    spike_contribution[t + k] += intensity * decay
+\end{verbatim}
+
+\subsection{Composant 4 : Monte Carlo (500 simulations)}
+
+\textbf{Pourquoi 500 ?} Pour avoir assez de scénarios et calculer des statistiques fiables.
+
+\textbf{Ce qu'on calcule :}
+\begin{itemize}
+    \item \textbf{Moyenne} : le scénario <<~central~>>
+    \item \textbf{Percentile 5\%} : pire cas (prix bas)
+    \item \textbf{Percentile 95\%} : pire cas (prix haut)
+\end{itemize}
+
+\textbf{En code Python :}
+\begin{verbatim}
+all_paths = np.zeros((500, n_months))  # 500 simulations x 72 mois
+
+for i in range(500):
+    brownian = generate_brownian_motion(...)
+    spikes = generate_spike_process(...)
+    all_paths[i] = trend * exp(brownian) * (1 + spikes)
+
+mean = np.mean(all_paths, axis=0)
+p5 = np.percentile(all_paths, 5, axis=0)
+p95 = np.percentile(all_paths, 95, axis=0)
+\end{verbatim}
+
+% ============================================================================
+\section{Guide Complet des Paramètres de l'Interface}
+% ============================================================================
+
+Voici TOUS les sliders et options de l'application, avec leur effet exact.
+
+\subsection{Section : Commodity Selection}
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Paramètre} & \textbf{Valeurs} & \textbf{Ce que ça change} \\
+\hline
+\texttt{Commodity} & Sulfuric Acid / Sulphur & Change le fichier source (feuille Excel différente) \\
+\hline
+\texttt{Market / Region} & CFR US Gulf, FOB Japan... & Sélectionne la colonne de prix dans l'Excel \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Section : Projection Horizon}
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Paramètre} & \textbf{Valeurs} & \textbf{Ce que ça change} \\
+\hline
+\texttt{Start Year} & 2025, 2026, 2027 & Année de début de la simulation \\
+\hline
+\texttt{End Year} & 2028, 2029, 2030 & Année de fin $\rightarrow$ détermine le nombre de mois \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Exemple :} Start=2025, End=2030 $\rightarrow$ 6 ans = 72 mois de simulation.
+
+\subsection{Section : Volatility Settings}
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Paramètre} & \textbf{Valeurs} & \textbf{Ce que ça change} \\
+\hline
+\texttt{Use Historical Volatility} & Oui / Non & Si Oui : calcule $\sigma$ depuis l'historique \\
+\hline
+\texttt{Volatility Multiplier} & 0.5 à 2.0 & Multiplie la volatilité historique (1.5 = 50\% plus volatile) \\
+\hline
+\texttt{Base Volatility (\%)} & 5\% à 50\% & Volatilité manuelle si historique désactivé \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Formule utilisée :}
+$$\sigma_{\text{final}} = \sigma_{\text{historique}} \times \text{Multiplier} \times 0.6$$
+
+Le $\times 0.6$ est un <<~dampening~>> pour éviter les courbes trop bruyantes.
+
+\subsection{Section : Market Spikes (Black Swans)}
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Paramètre} & \textbf{Valeurs} & \textbf{Ce que ça change} \\
+\hline
+\texttt{Spike Frequency} & 0 à 3/an & Probabilité $p = freq/12$ par mois \\
+\hline
+\texttt{Spike Intensity} & 0\% à 100\% & Amplitude du spike (ex: 50\% = prix $\times$ 1.5) \\
+\hline
+\texttt{Spike Persistence} & 1 à 12 mois & Durée avant retour à la normale \\
+\hline
+\texttt{Decay Type} & Exponential / Linear & Forme de la décroissance \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Conseil pratique :}
+\begin{itemize}
+    \item Scénario calme : Freq=0.5, Intensity=20\%, Persistence=3
+    \item Scénario stress : Freq=2.0, Intensity=50\%, Persistence=6
+\end{itemize}
+
+\subsection{Section : Simulation Settings}
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Paramètre} & \textbf{Valeurs} & \textbf{Ce que ça change} \\
+\hline
+\texttt{Monte Carlo Paths} & 100 à 2000 & Nombre de scénarios simulés \\
+\hline
+\texttt{Curve Smoothing} & 0.3 à 0.9 & Coefficient AR(1) $\alpha$ : plus haut = plus lisse \\
+\hline
+\texttt{Random Seed} & 0 à 99999 & Graine aléatoire (même seed = même résultat) \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Section : Scenario Explorer (Nouveau !)}
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Paramètre} & \textbf{Valeurs} & \textbf{Ce que ça change} \\
+\hline
+\texttt{Select Scenario} & 1 à N & Affiche le scénario \#X sur le graphique \\
+\hline
+\end{tabular}
+\end{center}
+
+Ce slider permet de <<~naviguer~>> dans les 500 (ou plus) scénarios simulés pour voir différentes réalisations possibles du marché.
+
+% ============================================================================
+\section{Résumé du Code Principal}
+% ============================================================================
+
+\subsection{Architecture Simplifiée}
+
+\begin{verbatim}
+app.py
+  |
+  +-- parse_outlook_data()      # Lit l'Excel CRU
+  +-- interpolate_trend()       # Interpole en mensuel
+  +-- calculate_volatility()    # Calcule sigma historique
+  |
+  +-- generate_brownian_motion()  # Genere le bruit lisse
+  +-- generate_spike_process()    # Genere les spikes
+  +-- simulate_prices()           # Combine tout
+  |
+  +-- create_projection_chart()   # Graphique Plotly
+  +-- main()                      # Interface Streamlit
+\end{verbatim}
+
+\subsection{Fonctions Clés Expliquées}
+
+\subsubsection{generate\_brownian\_motion()}
+
+\begin{verbatim}
+def generate_brownian_motion(n_steps, volatility, n_sims, 
+                             smoothing_factor=0.7, seed=None):
+    # 1) Convertir volatilite annuelle en mensuelle
+    monthly_vol = (volatility / sqrt(12)) * 0.6  # Dampen
+    
+    # 2) Generer chocs aleatoires
+    raw_shocks = normal(0, monthly_vol, (n_sims, n_steps))
+    
+    # 3) Appliquer lissage AR(1)
+    smoothed = zeros((n_sims, n_steps))
+    smoothed[:, 0] = raw_shocks[:, 0]
+    for t in range(1, n_steps):
+        smoothed[:, t] = (smoothing_factor * smoothed[:, t-1] + 
+                          (1-smoothing_factor) * raw_shocks[:, t])
+    
+    # 4) Somme cumulative
+    return cumsum(smoothed, axis=1)
+\end{verbatim}
+
+\subsubsection{generate\_spike\_process()}
+
+\begin{verbatim}
+def generate_spike_process(n_steps, freq, intensity, 
+                           persistence, decay_type):
+    # 1) Probabilite de spike par mois
+    p_spike = min(freq / 12, 0.3)
+    
+    # 2) Tirer les spikes (bernoulli)
+    spikes = binomial(1, p_spike, n_steps)
+    
+    # 3) Appliquer decroissance
+    contribution = zeros(n_steps)
+    for t in range(n_steps):
+        if spikes[t] == 1:
+            for k in range(persistence):
+                if t + k < n_steps:
+                    decay = exp(-3.0 * k / persistence)
+                    contribution[t + k] += intensity * decay
+    
+    return contribution
+\end{verbatim}
+
+% ============================================================================
+\section{Conclusion : Comment Tout S'Assemble}
+% ============================================================================
+
+\begin{enumerate}
+    \item L'utilisateur choisit ses paramètres dans la sidebar
+    \item On lit la tendance CRU depuis Excel
+    \item On génère 500 trajectoires avec bruit + spikes
+    \item On calcule moyenne et percentiles
+    \item On affiche le graphique avec :
+    \begin{itemize}
+        \item Bande grise = zone de risque (5\%-95\%)
+        \item Ligne rouge = prévision officielle
+        \item Ligne bleue = scénario sélectionné
+    \end{itemize}
+    \item L'utilisateur peut explorer chaque scénario avec le slider
+\end{enumerate}
+
+\vspace{1cm}
+
+\begin{center}
+\fbox{\parbox{0.8\textwidth}{
+\textbf{En résumé :} \\
+Prix = Tendance CRU $\times$ Bruit lissé $\times$ Spikes avec décroissance \\
+Répété 500 fois $\rightarrow$ Distribution de prix possibles
+}}
+\end{center}
+
+\vspace{1cm}
+
+\hrule
+\vspace{0.3cm}
+\small
+\textbf{Document généré le 28 janvier 2026} --- Pour toute question, contacter l'équipe Data \& Analytics.
+
+\end{document}

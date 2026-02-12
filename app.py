@@ -29,9 +29,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============================================================
-# LIGHT-MODE STYLES
-# ============================================================
+# --- LIGHT-MODE STYLES ---
 
 STYLES = """
 <style>
@@ -105,9 +103,7 @@ STYLES = """
 st.markdown(STYLES, unsafe_allow_html=True)
 
 
-# ============================================================
-# FORMULA DEFINITIONS
-# ============================================================
+# --- FORMULA DEFINITIONS ---
 
 FORMULA_LIST = [
     "F1 — Sulfur Indexing Only",
@@ -134,9 +130,7 @@ FORMULA_EQUATIONS = {
 }
 
 
-# ============================================================
-# SIMULATION ENGINE
-# ============================================================
+# --- SIMULATION ENGINE ---
 
 @st.cache_data
 def parse_historical_data(file_path: str) -> pd.DataFrame:
@@ -201,12 +195,19 @@ def interpolate_trend(outlook_df, column, start_year, end_year, overrides=None):
             mask = years == yr
             if mask.any():
                 prices[mask] = price
+            else:
+                years = np.append(years, yr)
+                prices = np.append(prices, price)
+                order = np.argsort(years)
+                years, prices = years[order], prices[order]
     try:
-        f = interpolate.interp1d(years, prices, kind='cubic', fill_value='extrapolate')
+        f = interpolate.interp1d(years, prices, kind='cubic', fill_value=(prices[0], prices[-1]), bounds_error=False)
     except:
-        f = interpolate.interp1d(years, prices, kind='linear', fill_value='extrapolate')
+        f = interpolate.interp1d(years, prices, kind='linear', fill_value=(prices[0], prices[-1]), bounds_error=False)
     date_range = pd.date_range(start=f'{start_year}-01-01', end=f'{end_year}-12-31', freq='MS')
-    return pd.Series(f(date_range.year + (date_range.month - 1) / 12), index=date_range, name='Trend')
+    trend_vals = f(date_range.year + (date_range.month - 1) / 12)
+    trend_vals = np.maximum(trend_vals, 10.0)  # floor at $10/t
+    return pd.Series(trend_vals, index=date_range, name='Trend')
 
 def generate_brownian_motion(n_steps, volatility, n_sims=100, smoothing=0.7, seed=None):
     if seed is not None: np.random.seed(seed)
@@ -273,9 +274,7 @@ def simulate_prices(trend, volatility, spike_freq, spike_intensity, spike_persis
     }
 
 
-# ============================================================
-# CHARTS (Light-mode color scheme)
-# ============================================================
+# --- CHARTS (Light-mode color scheme) ---
 
 CHART_BG = '#ffffff'
 CHART_PAPER = 'rgba(0,0,0,0)'
@@ -388,9 +387,7 @@ def create_scenario_formula_chart(scenario_result, product_name):
     return chart_layout(fig, f'<b>{product_name} — Formula Applied to Scenario</b>')
 
 
-# ============================================================
-# MAIN APP
-# ============================================================
+# --- MAIN APP ---
 
 def main():
     st.markdown("""
@@ -436,7 +433,7 @@ def main():
             st.markdown("### Horizon")
             c1, c2 = st.columns(2)
             start_year = c1.selectbox("Start", [2025, 2026, 2027], index=0, key='sy')
-            end_year = c2.selectbox("End", [2028, 2029, 2030], index=2, key='ey')
+            end_year = c2.selectbox("End", [2030, 2032, 2035], index=2, key='ey')
             
             st.markdown("---")
             st.markdown("### CRU Outlook (Editable)")
@@ -446,6 +443,17 @@ def main():
                 for yr in range(start_year, end_year + 1):
                     cru_overrides[yr] = st.number_input(f"{yr} ($/t)", 50, 500, 140, 5, key=f'cru_{yr}')
             
+            st.markdown("---")
+            st.markdown("### Petcoke & Clinker Outlook")
+            pc_clk_editable = st.checkbox("Override Petcoke / Clinker", value=False, key='pc_clk_edit')
+            petcoke_outlook = {}
+            clinker_outlook = {}
+            if pc_clk_editable:
+                for yr in range(start_year, end_year + 1):
+                    pc_c1, pc_c2 = st.columns(2)
+                    petcoke_outlook[yr] = pc_c1.number_input(f"PC {yr}", 50, 400, 140, 5, key=f'pc_{yr}')
+                    clinker_outlook[yr] = pc_c2.number_input(f"CLK {yr}", 50, 400, 130, 5, key=f'clk_{yr}')
+
             st.markdown("---")
             st.markdown("### Volatility")
             use_hist_vol = st.checkbox("Use Historical", value=True, key='hist_vol')
@@ -548,11 +556,11 @@ def main():
         
         st.markdown("### Formula Lab")
         
-        # ---- DATA SOURCE ----
+        # DATA SOURCE
         use_new = NEW_FORMULA_PATH.exists()
         use_old = OLD_FORMULA_PATH.exists()
         
-        # ---- FORMULA SELECTOR ----
+        # FORMULA SELECTOR
         available_formulas = FORMULA_LIST if use_new else FORMULA_LIST[:5]  # F6 only with new file
         selected = st.selectbox("Choose a formula", available_formulas, key='formula_pick')
         formula_idx = FORMULA_LIST.index(selected)
@@ -565,11 +573,11 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # ---- VIEW TOGGLE ----
+        # VIEW TOGGLE
         view_mode = st.radio("View", ["Quarterly", "Annual"], horizontal=True, key='view_mode')
         view_key = 'annual' if view_mode == 'Annual' else 'quarterly'
         
-        # ---- LOAD DATA (backtest only — historical up to today) ----
+        # LOAD DATA (backtest only — historical up to today)
         if use_new:
             hist = load_historical_prices_extended(str(NEW_FORMULA_PATH))
         else:
@@ -580,7 +588,7 @@ def main():
         if hist is not None and 'Year' in hist.columns:
             hist = hist[hist['Year'] <= 2025].copy()
         
-        # ---- FORMULA-SPECIFIC PARAMETERS ----
+        # FORMULA-SPECIFIC PARAMETERS
         st.markdown("#### Parameters")
         
         if formula_idx == 0:
@@ -686,7 +694,7 @@ def main():
                       'acs0': f6_acs0, 's0': f6_s0, 'dap0': f6_dap0, 'pc0': f6_pc0, 'clk0': f6_clk0}
             formula_name = "S, DAP, Petcoke & Clinker"
         
-        # ---- FLOOR / CAP ----
+        # FLOOR / CAP
         st.markdown("---")
         floor_cap_cols = st.columns(2)
         floor_val = floor_cap_cols[0].number_input("Floor ($/t)", 0, 300, floor_def, 10, key='floor')
@@ -695,13 +703,13 @@ def main():
         params['floor'] = floor_val
         params['cap'] = cap_val
         
-        # ---- COMPUTE (backtest only) ----
+        # COMPUTE (backtest only)
         compute_fns = [compute_formula_1, compute_formula_2, compute_formula_3,
                        compute_formula_4, compute_formula_5, compute_formula_6]
         
         bt = compute_fns[formula_idx](hist, params, view=view_key)
         
-        # ---- FILTER YEARS ----
+        # FILTER YEARS
         start_yr = st.select_slider("History from", list(range(2002, 2026)), value=2018, key='hist_start')
         bt_filtered = bt[bt['Year'] >= start_yr].copy()
         
@@ -710,12 +718,12 @@ def main():
         else:
             st.markdown("---")
             
-            # ---- CHARTS ----
+            # CHARTS
             st.plotly_chart(create_formula_vs_market_chart(bt_filtered, formula_name, floor=floor_val, cap=cap_val), use_container_width=True)
             
             st.plotly_chart(create_pnl_chart(bt_filtered, formula_name, view_mode=view_key), use_container_width=True)
             
-            # ---- SUMMARY METRICS ----
+            # SUMMARY METRICS
             st.markdown("### Performance Summary")
             
             avg_pnl = bt_filtered['PnL'].mean()
@@ -794,8 +802,6 @@ def main():
             scenario_prices = results['all_paths'][sc_idx - 1, :]
             dates = results['dates']
             
-            # Apply the SELECTED formula to this MC scenario
-            # Build monthly-like dataframe from the MC scenario
             scenario_df = pd.DataFrame({
                 'ACS_CFR_NAfrica': scenario_prices,
                 'Year': dates.year,
@@ -809,9 +815,13 @@ def main():
             })
             if 'DAP' not in scenario_df.columns:
                 scenario_df['DAP'] = params.get('dap0', 500)
-            if 'Petcoke' not in scenario_df.columns:
+            if pc_clk_editable and petcoke_outlook:
+                scenario_df['Petcoke'] = scenario_df['Year'].map(petcoke_outlook).fillna(params.get('pc0', 140))
+            else:
                 scenario_df['Petcoke'] = params.get('pc0', 140)
-            if 'Clinker' not in scenario_df.columns:
+            if pc_clk_editable and clinker_outlook:
+                scenario_df['Clinker'] = scenario_df['Year'].map(clinker_outlook).fillna(params.get('clk0', 130))
+            else:
                 scenario_df['Clinker'] = params.get('clk0', 130)
             
             # Compute formula for this scenario
@@ -900,9 +910,13 @@ def main():
                 })
                 if 'DAP' not in sc_df.columns:
                     sc_df['DAP'] = params.get('dap0', 500)
-                if 'Petcoke' not in sc_df.columns:
+                if pc_clk_editable and petcoke_outlook:
+                    sc_df['Petcoke'] = sc_df['Year'].map(petcoke_outlook).fillna(params.get('pc0', 140))
+                else:
                     sc_df['Petcoke'] = params.get('pc0', 140)
-                if 'Clinker' not in sc_df.columns:
+                if pc_clk_editable and clinker_outlook:
+                    sc_df['Clinker'] = sc_df['Year'].map(clinker_outlook).fillna(params.get('clk0', 130))
+                else:
                     sc_df['Clinker'] = params.get('clk0', 130)
                 
                 sc_result = compute_fns[formula_idx](sc_df, params, view='quarterly')
@@ -963,7 +977,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #5a6a85; font-size: 0.85rem;'>
-        Built by Mohammed ELARIDI | Data: CRU Outlook & ACS Pricing Simulator
+        Built by Mohammed ELABRIDI | Data: CRU Outlook & ACS Pricing Simulator
     </div>
     """, unsafe_allow_html=True)
 

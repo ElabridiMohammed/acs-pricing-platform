@@ -1,0 +1,114 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{amsmath}
+
+\geometry{margin=2cm, top=1.5cm, bottom=1.5cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\pagestyle{empty}
+
+\definecolor{accent}{HTML}{1E90FF}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{Simulateur de Prix CRU}} \\[0.2cm]
+{\large Comment ça marche ? (version humaine)} \\[0.3cm]
+\small Par Mohammed ELARIDI --- Janvier 2026
+\end{center}
+\hrule
+\vspace{0.4cm}
+
+\textbf{\large Le Problème}
+
+CRU dit : <<~140\$/t en 2028~>>. Cool. Sauf que le marché s'en fiche des prévisions. Entre grèves, ouragans et décisions politiques random, le prix fait rarement ce qu'on lui dit.
+
+\textbf{Solution :} On simule PLEIN de scénarios au lieu de croire à UN seul chiffre.
+
+\vspace{0.3cm}
+\textbf{\large La Formule (Promis, c'est la seule)}
+
+\begin{center}
+\fcolorbox{accent}{blue!5}{
+$\textbf{Prix}(t) = \underbrace{\text{Tendance CRU}}_{\text{ce que dit CRU}} \times \underbrace{e^{\text{bruit}}}_{\text{la vraie vie}} \times \underbrace{(1 + \text{spike})}_{\text{les catastrophes}}$
+}
+\end{center}
+
+\begin{itemize} \setlength{\itemsep}{0pt}
+    \item \textbf{Tendance CRU} = La prévision officielle (ligne rouge pointillée)
+    \item \textbf{Le bruit} = Variations quotidiennes : +2\% un mois, -3\% le suivant
+    \item \textbf{Les spikes} = Quand quelqu'un fait grève ou qu'un ouragan passe
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{\large Le Bruit (Volatilité)}
+
+Imaginez que le prix essaie de suivre CRU, mais qu'il est un peu bourré. Il zigzague.
+
+\textbf{Problème :} Bruit 100\% aléatoire = électrocardiogramme. Pas réaliste.
+
+\textbf{Solution :} On ajoute de la <<~mémoire~>>. Si ça montait hier, ça continue un peu aujourd'hui.
+$$\text{Mouvement}(t) = 0.7 \times \text{Mouvement}(t-1) + 0.3 \times \text{Choc}$$
+
+Le 0.7 c'est le <<~smoothing~>> --- plus c'est haut, plus c'est lisse.
+
+\vspace{0.3cm}
+\textbf{\large Les Spikes (Chocs de Marché)}
+
+Parfois il se passe des trucs. Une fonderie ferme, un pays impose des sanctions : le prix explose.
+
+\textbf{Forme :} <<~Aileron de requin~>> --- montée rapide (1 mois), descente progressive (3-6 mois).
+$$\text{Spike}(t+k) = \text{Intensité} \times e^{-3k / \text{Persistance}}$$
+En gros : le choc s'estompe exponentiellement. Comme un souvenir douloureux.
+
+\vspace{0.3cm}
+\textbf{\large Monte Carlo : 500 Simulations}
+
+On lance 500 simulations avec des dés différents à chaque fois :
+\begin{itemize} \setlength{\itemsep}{0pt}
+    \item Simulation \#1 : Pas de spike $\rightarrow$ prix stable
+    \item Simulation \#47 : Gros spike en 2027 $\rightarrow$ +50\%
+    \item Simulation \#233 : Deux spikes $\rightarrow$ chaos
+\end{itemize}
+$\rightarrow$ La \textbf{bande grise} = 95\% des scénarios possibles.
+
+\vspace{0.3cm}
+\textbf{\large Le Graphique}
+
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+\textcolor{red}{\textbf{Rouge pointillé}} & Prévision CRU (budget) \\
+\textcolor{gray}{\textbf{Bande grise}} & Zone de risque (95\%) \\
+\textcolor{blue}{\textbf{Bleu solide}} & Scénario simulé \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+\textbf{\large En Résumé}
+
+\begin{enumerate} \setlength{\itemsep}{0pt}
+    \item Prévision CRU + bruit lissé + spikes <<~requin~>>
+    \item $\times$ 500 simulations
+    \item = Plage de prix possibles
+\end{enumerate}
+
+\vspace{0.4cm}
+\begin{center}
+\fcolorbox{black}{yellow!20}{
+\parbox{0.9\textwidth}{\small
+\textbf{Disclaimer :} Ce n'est pas de la prédiction. On ne sait pas CE QUI VA se passer, on sait CE QUI POURRAIT se passer.
+}}
+\end{center}
+
+\vspace{0.3cm}
+\hrule
+\vspace{0.2cm}
+\small \textbf{Contact :} Mohammed ELARIDI \hfill \textit{<<~Tous les modèles sont faux, mais certains sont utiles.~>>}
+
+\end{document}
