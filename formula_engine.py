@@ -254,7 +254,7 @@ def compute_formula_1(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
     df = hist.copy()
     df['S_weighted'] = w_me * df['S_CFR_ME'] + w_na * df['S_CFR_NA']
     df['Formula_raw'] = a * (df['S_weighted'] * conv_ratio + prod_cost) + b
-    df['Formula'] = df['Formula_raw']
+    df['Formula'] = df['Formula_raw'].clip(lower=floor, upper=cap)
     
     agg_fn = _annual_series if view == 'annual' else _quarterly_series
     q = agg_fn(df, ['ACS_CFR_NAfrica', 'S_weighted', 'Formula'])
@@ -279,7 +279,7 @@ def compute_formula_2(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
     df['S_weighted'] = w_me * df['S_CFR_ME'] + w_na * df['S_CFR_NA']
     df['S_smooth'] = _smooth_series(df['S_weighted'], window=smooth_window, sigma=smooth_window / 3)
     df['Formula_raw'] = a * (df['S_smooth'] * conv_ratio + prod_cost) + b
-    df['Formula'] = df['Formula_raw']
+    df['Formula'] = df['Formula_raw'].clip(lower=floor, upper=cap)
     
     agg_fn = _annual_series if view == 'annual' else _quarterly_series
     q = agg_fn(df, ['ACS_CFR_NAfrica', 'S_weighted', 'Formula'])
@@ -307,7 +307,7 @@ def compute_formula_3(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
     )
     df['ACS_lagged'] = df['ACS_weighted'].shift(1)
     df['Formula_raw'] = a * df['ACS_lagged']
-    df['Formula'] = df['Formula_raw']
+    df['Formula'] = df['Formula_raw'].clip(lower=floor, upper=cap)
     
     agg_fn = _annual_series if view == 'annual' else _quarterly_series
     q = agg_fn(df, ['ACS_CFR_NAfrica', 'Formula'])
@@ -347,7 +347,7 @@ def compute_formula_4(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
             df['DAP_val'] = dap0
     
     df['Formula_raw'] = acs0 * (a + b * df['S_weighted'] / s0 + c * df['DAP_val'] / dap0)
-    df['Formula'] = df['Formula_raw']
+    df['Formula'] = df['Formula_raw'].clip(lower=floor, upper=cap)
     
     agg_fn = _annual_series if view == 'annual' else _quarterly_series
     q = agg_fn(df, ['ACS_CFR_NAfrica', 'Formula'])
@@ -386,7 +386,7 @@ def compute_formula_5(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
             df['DAP_smooth'] = dap0
     
     df['Formula_raw'] = acs0 * (a + b * df['S_smooth'] / s0 + c * df['DAP_smooth'] / dap0)
-    df['Formula'] = df['Formula_raw']
+    df['Formula'] = df['Formula_raw'].clip(lower=floor, upper=cap)
     
     agg_fn = _annual_series if view == 'annual' else _quarterly_series
     q = agg_fn(df, ['ACS_CFR_NAfrica', 'Formula'])
@@ -440,7 +440,7 @@ def compute_formula_6(hist: pd.DataFrame, params: dict, view: str = 'quarterly')
         d * df['PC_val'] / pc0 +
         e * (1 - df['CLK_val'] / clk0)
     )
-    df['Formula'] = df['Formula_raw']
+    df['Formula'] = df['Formula_raw'].clip(lower=floor, upper=cap)
     
     agg_fn = _annual_series if view == 'annual' else _quarterly_series
     q = agg_fn(df, ['ACS_CFR_NAfrica', 'Formula'])

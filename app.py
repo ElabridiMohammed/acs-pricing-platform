@@ -316,7 +316,7 @@ def create_projection_chart(results, product_name, scenario_idx=0):
                               hovertemplate='<b>Scenario</b><br>%{x|%b %Y}<br>$%{y:.1f}/t<extra></extra>'))
     fig.add_trace(go.Scatter(x=dates, y=results['mean_path'], mode='lines',
                               line=dict(color='#6366f1', width=1.5, dash='dash'), name='MC Mean', visible='legendonly'))
-    return chart_layout(fig, f'<b>{product_name} Price Projection</b>')
+    return chart_layout(fig, f'<b>Price Projection</b>')
 
 
 def create_distribution_chart(results, year):
@@ -331,7 +331,7 @@ def create_distribution_chart(results, year):
     return chart_layout(fig, f'<b>Distribution - {year}</b>', height=300, yaxis_title='Frequency')
 
 
-def create_formula_vs_market_chart(bt, formula_name, floor=None, cap=None):
+def create_formula_vs_market_chart(bt, formula_name, floor=None, cap=None, enforce=True):
     """Chart: Formula price vs Market price over time."""
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=bt['Period'], y=bt['Market'], mode='lines+markers',
@@ -340,12 +340,12 @@ def create_formula_vs_market_chart(bt, formula_name, floor=None, cap=None):
     fig.add_trace(go.Scatter(x=bt['Period'], y=bt['Formula'], mode='lines+markers',
                               line=dict(color='#2563eb', width=2.5), name=f'{formula_name}',
                               marker=dict(size=5)))
+    fc_style = dict(color='#f59e0b', width=1.5, dash='dash') if enforce else dict(color='#d1d5db', width=1, dash='dot')
+    suffix = '' if enforce else ' (ref)'
     if floor is not None:
-        fig.add_hline(y=floor, line=dict(color='#f59e0b', width=1.5, dash='dash'),
-                      annotation_text=f'Floor: ${floor}')
+        fig.add_hline(y=floor, line=fc_style, annotation_text=f'Floor: ${floor}{suffix}')
     if cap is not None:
-        fig.add_hline(y=cap, line=dict(color='#f59e0b', width=1.5, dash='dash'),
-                      annotation_text=f'Cap: ${cap}')
+        fig.add_hline(y=cap, line=fc_style, annotation_text=f'Cap: ${cap}{suffix}')
     return chart_layout(fig, f'<b>{formula_name} vs Market</b>')
 
 
@@ -743,12 +743,14 @@ def main():
         
         # FLOOR / CAP
         st.markdown("---")
+        enforce_fc = st.toggle("Enforce Floor / Cap", value=True, key='enforce_fc')
         floor_cap_cols = st.columns(2)
         floor_val = floor_cap_cols[0].number_input("Floor ($/t)", 0, 300, floor_def, 10, key='floor')
         cap_val = floor_cap_cols[1].number_input("Cap ($/t)", 100, 500, cap_def, 10, key='cap')
         
-        params['floor'] = floor_val
-        params['cap'] = cap_val
+        # When toggle is off, pass very wide bounds so formula is unconstrained
+        params['floor'] = floor_val if enforce_fc else 0
+        params['cap'] = cap_val if enforce_fc else 99999
         
         # COMPUTE (backtest only)
         compute_fns = [compute_formula_1, compute_formula_2, compute_formula_3,
@@ -766,7 +768,7 @@ def main():
             st.markdown("---")
             
             # CHARTS
-            st.plotly_chart(create_formula_vs_market_chart(bt_filtered, formula_name, floor=floor_val, cap=cap_val), use_container_width=True)
+            st.plotly_chart(create_formula_vs_market_chart(bt_filtered, formula_name, floor=floor_val, cap=cap_val, enforce=enforce_fc), use_container_width=True)
             
             st.plotly_chart(create_pnl_chart(bt_filtered, formula_name, view_mode=view_key), use_container_width=True)
             
@@ -929,10 +931,11 @@ def main():
                     name=f'{formula_name} Price',
                     hovertemplate='<b>Formula</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'))
                 
-                fig_sc.add_hline(y=floor_val, line=dict(color='#f59e0b', width=1.5, dash='dash'),
-                                annotation_text=f'Floor: ${floor_val}')
-                fig_sc.add_hline(y=cap_val, line=dict(color='#f59e0b', width=1.5, dash='dash'),
-                                annotation_text=f'Cap: ${cap_val}')
+                fc_style = dict(color='#f59e0b', width=1.5, dash='dash') if enforce_fc else dict(color='#d1d5db', width=1, dash='dot')
+                fc_label_floor = f'Floor: ${floor_val}' + ('' if enforce_fc else ' (ref)')
+                fc_label_cap = f'Cap: ${cap_val}' + ('' if enforce_fc else ' (ref)')
+                fig_sc.add_hline(y=floor_val, line=fc_style, annotation_text=fc_label_floor)
+                fig_sc.add_hline(y=cap_val, line=fc_style, annotation_text=fc_label_cap)
                 chart_layout(fig_sc, f'<b>{formula_name} Applied to MC Scenario #{sc_idx}</b>')
                 st.plotly_chart(fig_sc, use_container_width=True)
                 
