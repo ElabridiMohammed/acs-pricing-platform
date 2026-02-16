@@ -26,6 +26,12 @@ from correlation_engine import (
     compute_correlation_matrix, apply_correlated_adjustment,
     expand_yearly_to_monthly, CORR_VARS,
 )
+from volume_engine import (
+    load_price_time_series, compute_yearly_averages,
+    compute_negotiated_price, compute_weighted_avg_price,
+    build_project_revenue_table, build_ocp_scenarios,
+    build_custom_ocp_scenario, build_sensitivity_table,
+)
 
 st.set_page_config(
     page_title="ACS Pricing Decision Platform",
@@ -428,7 +434,11 @@ def main():
         except Exception as e:
             st.warning(f"Could not load correlation data: {e}")
     
-    tab1, tab2 = st.tabs(["Monte Carlo Simulation", "Formula Lab & Decision"])
+    VOLUME_DATA_PATH = Path(__file__).parent / "1602_1136_ACS Pricing simulator.xlsx"
+    if not VOLUME_DATA_PATH.exists():
+        VOLUME_DATA_PATH = NEW_FORMULA_PATH
+
+    tab1, tab2, tab3 = st.tabs(["Monte Carlo Simulation", "Formula Lab & Decision", "Contract Impact Analysis"])
     
     # ============================================================
     # TAB 1: MONTE CARLO
@@ -1080,6 +1090,403 @@ def main():
                             height=350, yaxis_title='Frequency')
                 st.plotly_chart(fig_dist, use_container_width=True)
     
+    # ============================================================
+    # TAB 3: CONTRACT IMPACT ANALYSIS (Volume-Based Revenue)
+    # ============================================================
+    with tab3:
+        st.markdown("### Contract Impact Analysis")
+        st.markdown("<p style='color: #5a6a85;'>Volume-based pricing model — Compare contract scenarios with OCP</p>", unsafe_allow_html=True)
+
+        # --- Load data ---
+        try:
+            vol_ts = load_price_time_series(str(VOLUME_DATA_PATH))
+            vol_yearly = compute_yearly_averages(vol_ts)
+            vol_data_ok = True
+        except Exception as e:
+            st.error(f"Could not load volume data: {e}")
+            vol_data_ok = False
+
+        if vol_data_ok:
+            # --- SIDEBAR-LIKE CONTROLS (in-tab) ---
+            st.markdown("---")
+            st.markdown("#### Parameters")
+            vp1, vp2, vp3 = st.columns(3)
+            with vp1:
+                total_vol = st.number_input(
+                    "Total Production Volume (KT)", 100, 3000, 750, 50,
+                    key='vol_total', help="Annual production capacity"
+                )
+                fixed_price_vol = st.number_input(
+                    "Fixed Price ($/ton)", 50.0, 300.0, 110.0, 5.0,
+                    key='vol_fixed_price'
+                )
+            with vp2:
+                fixed_pct_vol = st.slider(
+                    "Fixed Price Volume %", 0, 100, 70, 5,
+                    key='vol_fixed_pct', help="Percentage of production at fixed price"
+                ) / 100.0
+                ocp_pct_vol = st.slider(
+                    "OCP Purchase Volume %", 0, 100, 100, 5,
+                    key='vol_ocp_pct', help="Percentage of production OCP buys"
+                ) / 100.0
+            with vp3:
+                coeff_a_vol = st.number_input(
+                    "Coefficient A (FOB_IO multiplier)", 0.1, 3.0, 1.0, 0.05,
+                    key='vol_coeff_a', help="A in formula A × FOB_IO + B"
+                )
+                premium_b_vol = st.number_input(
+                    "Premium/Discount B ($)", -50.0, 100.0, 0.0, 5.0,
+                    key='vol_premium_b', help="B in formula A × FOB_IO + B"
+                )
+
+            var_pct_vol = 1.0 - fixed_pct_vol
+            vol_fixed_kt = total_vol * fixed_pct_vol
+            vol_var_kt = total_vol * var_pct_vol
+
+            # Filter years
+            yr_range = st.slider(
+                "Year Range", int(vol_yearly['Year'].min()),
+                int(vol_yearly['Year'].max()),
+                (2022, 2035), key='vol_yr_range'
+            )
+            vol_yearly_f = vol_yearly[
+                (vol_yearly['Year'] >= yr_range[0]) &
+                (vol_yearly['Year'] <= yr_range[1])
+            ].copy()
+
+            # --- PERSPECTIVE SELECTOR ---
+            st.markdown("---")
+            perspective = st.radio(
+                "Perspective", ["Project Perspective", "OCP Perspective"],
+                horizontal=True, key='vol_perspective'
+            )
+
+            if perspective == "Project Perspective":
+                # === PROJECT PERSPECTIVE ===
+                proj_rev = build_project_revenue_table(
+                    vol_yearly_f, total_vol, fixed_pct_vol,
+                    fixed_price_vol, coeff_a_vol, premium_b_vol
+                )
+
+                # --- Key Metrics ---
+                st.markdown("#### Key Metrics")
+                pm1, pm2, pm3, pm4, pm5 = st.columns(5)
+                avg_rev = proj_rev['Revenue_Total_M'].mean()
+                avg_wp = proj_rev['Weighted_Avg_Price'].mean()
+                avg_mkt = proj_rev['ACS_CFR_NAfrica'].mean()
+                avg_neg = proj_rev['Negotiated_Price'].mean()
+                delta_pct = ((avg_wp - avg_mkt) / avg_mkt * 100) if avg_mkt > 0 else 0
+
+                pm1.metric("Avg Revenue", f"${avg_rev:.1f}M/yr")
+                pm2.metric("Weighted Avg Price", f"${avg_wp:.0f}/t")
+                pm3.metric("Market Ref Price", f"${avg_mkt:.0f}/t")
+                pm4.metric("Negotiated Price", f"${avg_neg:.0f}/t")
+                pm5.metric("vs Market", f"{delta_pct:+.1f}%",
+                           delta_color="inverse" if delta_pct > 0 else "normal")
+
+                # --- Graph 1: Business Plan Overview (Total Revenue) ---
+                st.markdown("---")
+                fig_rev = go.Figure()
+                fig_rev.add_trace(go.Bar(
+                    x=proj_rev['Year'].astype(str),
+                    y=proj_rev['Revenue_Fixed_M'],
+                    name=f'Fixed ({fixed_pct_vol*100:.0f}%)',
+                    marker_color='#2563eb',
+                    hovertemplate='<b>Fixed Revenue</b><br>%{x}<br>$%{y:.1f}M<extra></extra>'
+                ))
+                fig_rev.add_trace(go.Bar(
+                    x=proj_rev['Year'].astype(str),
+                    y=proj_rev['Revenue_Var_M'],
+                    name=f'Negotiated ({var_pct_vol*100:.0f}%)',
+                    marker_color='#f59e0b',
+                    hovertemplate='<b>Negotiated Revenue</b><br>%{x}<br>$%{y:.1f}M<extra></extra>'
+                ))
+                fig_rev.update_layout(barmode='stack')
+                chart_layout(fig_rev, '<b>Business Plan — Total Revenue</b>',
+                             yaxis_title='Revenue ($M)')
+                st.plotly_chart(fig_rev, use_container_width=True)
+
+                # --- Graph 3: Volume Split Visualization ---
+                fig_vol = go.Figure()
+                fig_vol.add_trace(go.Bar(
+                    x=['Total ACS Production'],
+                    y=[vol_fixed_kt],
+                    name=f'Fixed Price ({fixed_pct_vol*100:.0f}%)',
+                    marker_color='#2563eb',
+                    text=[f'{vol_fixed_kt:.0f} KT'],
+                    textposition='inside'
+                ))
+                fig_vol.add_trace(go.Bar(
+                    x=['Total ACS Production'],
+                    y=[vol_var_kt],
+                    name=f'Negotiated ({var_pct_vol*100:.0f}%)',
+                    marker_color='#f59e0b',
+                    text=[f'{vol_var_kt:.0f} KT'],
+                    textposition='inside'
+                ))
+                fig_vol.update_layout(
+                    barmode='stack', showlegend=True,
+                    annotations=[dict(
+                        x='Total ACS Production', y=total_vol + 20,
+                        text=f'<b>{total_vol:.0f} KT</b>',
+                        showarrow=False, font=dict(size=14, color='#1a2332')
+                    )]
+                )
+                chart_layout(fig_vol, '<b>Volume Split</b>', height=350,
+                             yaxis_title='Volume (KT)')
+                st.plotly_chart(fig_vol, use_container_width=True)
+
+                # --- Graph 4: Price Comparison Time Series ---
+                st.markdown("---")
+                fig_prices = go.Figure()
+                # ACS CFR North Africa (market ref)
+                fig_prices.add_trace(go.Scatter(
+                    x=proj_rev['Year'], y=proj_rev['ACS_CFR_NAfrica'],
+                    mode='lines+markers', name='Market Ref (CFR N.Africa)',
+                    line=dict(color='#1a2332', width=3),
+                    marker=dict(size=5),
+                    hovertemplate='<b>Market</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                ))
+                # Weighted formula price
+                fig_prices.add_trace(go.Scatter(
+                    x=proj_rev['Year'], y=proj_rev['Weighted_Avg_Price'],
+                    mode='lines+markers', name='Weighted Avg Price',
+                    line=dict(color='#f59e0b', width=2.5),
+                    marker=dict(size=5),
+                    hovertemplate='<b>Weighted</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                ))
+                # Fixed price line
+                fig_prices.add_hline(
+                    y=fixed_price_vol,
+                    line=dict(color='#2563eb', width=1.5, dash='dash'),
+                    annotation_text=f'Fixed: ${fixed_price_vol:.0f}/t'
+                )
+                # Negotiated price
+                fig_prices.add_trace(go.Scatter(
+                    x=proj_rev['Year'], y=proj_rev['Negotiated_Price'],
+                    mode='lines+markers', name='Negotiated Price',
+                    line=dict(color='#dc2626', width=2, dash='dot'),
+                    marker=dict(size=4),
+                    hovertemplate='<b>Negotiated</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                ))
+                # FOB IO index
+                fig_prices.add_trace(go.Scatter(
+                    x=proj_rev['Year'], y=proj_rev['FOB_IO'],
+                    mode='lines', name='FOB India/Indonesia',
+                    line=dict(color='#6366f1', width=1.5, dash='dashdot'),
+                    hovertemplate='<b>FOB IO</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                ))
+                chart_layout(fig_prices, '<b>Price Comparison</b>',
+                             yaxis_title='Price ($/t)')
+                st.plotly_chart(fig_prices, use_container_width=True)
+
+                # --- Sensitivity Table ---
+                st.markdown("---")
+                st.markdown("#### Sensitivity — Volume Split Impact")
+                sens = build_sensitivity_table(
+                    vol_yearly_f, total_vol, fixed_price_vol,
+                    coeff_a_vol, premium_b_vol,
+                    splits=[0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
+                )
+                st.dataframe(sens, use_container_width=True, hide_index=True)
+
+                # --- Revenue Heatmap (additional useful chart) ---
+                st.markdown("#### Revenue by Year")
+                with st.expander("Detailed Revenue Data"):
+                    disp_cols = ['Year', 'ACS_CFR_NAfrica', 'FOB_IO',
+                                 'Fixed_Price', 'Negotiated_Price',
+                                 'Weighted_Avg_Price', 'Revenue_Fixed_M',
+                                 'Revenue_Var_M', 'Revenue_Total_M']
+                    disp_df = proj_rev[[c for c in disp_cols if c in proj_rev.columns]].copy()
+                    disp_df.columns = [
+                        'Year', 'Market ($/t)', 'FOB IO ($/t)',
+                        'Fixed ($/t)', 'Negotiated ($/t)',
+                        'Weighted Avg ($/t)', 'Rev Fixed ($M)',
+                        'Rev Var ($M)', 'Rev Total ($M)'
+                    ][:len(disp_df.columns)]
+                    st.dataframe(disp_df.round(1), use_container_width=True,
+                                 hide_index=True)
+
+            else:
+                # === OCP PERSPECTIVE ===
+                ocp_scenarios = build_ocp_scenarios(
+                    vol_yearly_f, total_vol, fixed_price_vol,
+                    coeff_a_vol, premium_b_vol
+                )
+
+                # Also build custom scenario with slider values
+                custom_ocp = build_custom_ocp_scenario(
+                    vol_yearly_f, total_vol, ocp_pct_vol, fixed_pct_vol,
+                    fixed_price_vol, coeff_a_vol, premium_b_vol
+                )
+
+                # --- Key Metrics for custom scenario ---
+                st.markdown("#### OCP Custom Scenario Metrics")
+                om1, om2, om3, om4 = st.columns(4)
+                avg_cost = custom_ocp['OCP_Cost_M'].mean()
+                avg_mkt_cost = custom_ocp['Market_Cost_M'].mean()
+                avg_gain = custom_ocp['Value_Gain_M'].mean()
+                avg_price = custom_ocp['Avg_Price_Paid'].mean()
+                gain_clr = '#16a34a' if avg_gain >= 0 else '#dc2626'
+
+                om1.metric("OCP Avg Cost", f"${avg_cost:.1f}M/yr")
+                om2.metric("Market Cost", f"${avg_mkt_cost:.1f}M/yr")
+                om3.metric("Avg Value Gain", f"${avg_gain:+.1f}M/yr")
+                om4.metric("Avg Price Paid", f"${avg_price:.0f}/t")
+
+                # --- Graph 2: OCP Value Gain Comparison (Stacked Bars) ---
+                st.markdown("---")
+                fig_gain = go.Figure()
+                scenario_names = list(ocp_scenarios.keys())
+                colors_fixed = ['#2563eb', '#3b82f6', '#60a5fa']
+                colors_var = ['#f59e0b', '#fbbf24', '#fcd34d']
+
+                for idx, (sname, sdf) in enumerate(ocp_scenarios.items()):
+                    fig_gain.add_trace(go.Bar(
+                        x=sdf['Year'].astype(str),
+                        y=sdf['Gain_Fixed_M'],
+                        name=f'{sname} — Fixed portion',
+                        marker_color=colors_fixed[idx % len(colors_fixed)],
+                        offsetgroup=str(idx),
+                        hovertemplate=f'<b>{sname} (Fixed)</b><br>' + '%{x}<br>$%{y:.1f}M<extra></extra>'
+                    ))
+                    fig_gain.add_trace(go.Bar(
+                        x=sdf['Year'].astype(str),
+                        y=sdf['Gain_Var_M'],
+                        name=f'{sname} — Variable portion',
+                        marker_color=colors_var[idx % len(colors_var)],
+                        offsetgroup=str(idx),
+                        base=sdf['Gain_Fixed_M'],
+                        hovertemplate=f'<b>{sname} (Variable)</b><br>' + '%{x}<br>$%{y:.1f}M<extra></extra>'
+                    ))
+
+                fig_gain.update_layout(
+                    barmode='group',
+                    bargroupgap=0.1,
+                )
+                chart_layout(fig_gain,
+                             '<b>OCP Value Gain Comparison</b><br>'
+                             '<sup style="color:#6b7280">Positive = OCP saves vs market price</sup>',
+                             yaxis_title='Value Gain ($M)')
+                fig_gain.add_hline(y=0, line=dict(color='#94a3b8', width=1))
+                st.plotly_chart(fig_gain, use_container_width=True)
+
+                # --- Graph: OCP Cost vs Market by scenario ---
+                st.markdown("---")
+                fig_cost = go.Figure()
+                # Market reference line
+                mkt_ref = vol_yearly_f.get('ACS_CFR_NAfrica', pd.Series([120]))
+                for sname, sdf in ocp_scenarios.items():
+                    fig_cost.add_trace(go.Scatter(
+                        x=sdf['Year'], y=sdf['Avg_Price_Paid'],
+                        mode='lines+markers', name=sname,
+                        marker=dict(size=5),
+                        hovertemplate=f'<b>{sname}</b><br>' + '%{x}<br>$%{y:.1f}/t<extra></extra>'
+                    ))
+                fig_cost.add_trace(go.Scatter(
+                    x=vol_yearly_f['Year'],
+                    y=vol_yearly_f.get('ACS_CFR_NAfrica', 120),
+                    mode='lines+markers',
+                    name='Market Ref (CFR N.Africa)',
+                    line=dict(color='#1a2332', width=3),
+                    marker=dict(size=5),
+                    hovertemplate='<b>Market</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                ))
+                chart_layout(fig_cost, '<b>OCP Price Paid vs Market</b>',
+                             yaxis_title='Price ($/t)')
+                st.plotly_chart(fig_cost, use_container_width=True)
+
+                # --- Cumulative Value Gain chart ---
+                st.markdown("---")
+                fig_cum = go.Figure()
+                for sname, sdf in ocp_scenarios.items():
+                    cum_gain = sdf['Value_Gain_M'].cumsum()
+                    fig_cum.add_trace(go.Scatter(
+                        x=sdf['Year'], y=cum_gain,
+                        mode='lines+markers', name=sname,
+                        fill='tozeroy',
+                        hovertemplate=f'<b>{sname}</b><br>' + '%{x}<br>Cumulative: $%{y:.1f}M<extra></extra>'
+                    ))
+                fig_cum.add_hline(y=0, line=dict(color='#94a3b8', width=1))
+                chart_layout(fig_cum,
+                             '<b>Cumulative Value Gain Over Time</b>',
+                             yaxis_title='Cumulative Gain ($M)')
+                st.plotly_chart(fig_cum, use_container_width=True)
+
+                # --- Breakeven Analysis chart ---
+                st.markdown("---")
+                st.markdown("#### Breakeven Analysis")
+                fig_be = go.Figure()
+                be_years = vol_yearly_f['Year'].values
+                be_market = vol_yearly_f.get('ACS_CFR_NAfrica', pd.Series([120])).values
+                be_fob = vol_yearly_f.get('FOB_IO', pd.Series([100])).values
+                be_blended = [compute_weighted_avg_price(
+                    fixed_price_vol,
+                    compute_negotiated_price(f, coeff_a_vol, premium_b_vol),
+                    fixed_pct_vol
+                ) for f in be_fob]
+
+                fig_be.add_trace(go.Scatter(
+                    x=be_years, y=be_market,
+                    mode='lines+markers', name='Market Price',
+                    line=dict(color='#1a2332', width=3)
+                ))
+                fig_be.add_trace(go.Scatter(
+                    x=be_years, y=be_blended,
+                    mode='lines+markers', name='Blended Contract Price',
+                    line=dict(color='#f59e0b', width=2.5)
+                ))
+                fig_be.add_hline(
+                    y=fixed_price_vol,
+                    line=dict(color='#2563eb', width=1.5, dash='dash'),
+                    annotation_text=f'Fixed: ${fixed_price_vol:.0f}/t'
+                )
+                # Shade savings zone
+                fig_be.add_trace(go.Scatter(
+                    x=list(be_years) + list(be_years[::-1]),
+                    y=list(be_market) + list(be_blended[::-1]),
+                    fill='toself',
+                    fillcolor='rgba(22,163,74,0.1)',
+                    line=dict(width=0),
+                    name='Savings Zone',
+                    showlegend=True,
+                    hoverinfo='skip'
+                ))
+                chart_layout(fig_be, '<b>Breakeven — Contract vs Market</b>',
+                             yaxis_title='Price ($/t)')
+                st.plotly_chart(fig_be, use_container_width=True)
+
+                # --- Scenario Summary Table ---
+                st.markdown("---")
+                st.markdown("#### Scenario Comparison Summary")
+                summary_rows = []
+                for sname, sdf in ocp_scenarios.items():
+                    summary_rows.append({
+                        'Scenario': sname,
+                        'Avg Volume (KT)': f"{sdf['OCP_Volume_KT'].mean():.0f}",
+                        'Avg Cost ($M/yr)': f"{sdf['OCP_Cost_M'].mean():.1f}",
+                        'Avg Market ($M/yr)': f"{sdf['Market_Cost_M'].mean():.1f}",
+                        'Avg Value Gain ($M/yr)': f"{sdf['Value_Gain_M'].mean():+.1f}",
+                        'Total Gain ($M)': f"{sdf['Value_Gain_M'].sum():+.1f}",
+                    })
+                st.dataframe(
+                    pd.DataFrame(summary_rows),
+                    use_container_width=True, hide_index=True
+                )
+
+                # --- Detailed Data ---
+                with st.expander("Detailed OCP Scenario Data"):
+                    for sname, sdf in ocp_scenarios.items():
+                        st.markdown(f"**{sname}**")
+                        disp = sdf[['Year', 'OCP_Volume_KT', 'OCP_Cost_M',
+                                    'Market_Cost_M', 'Value_Gain_M',
+                                    'Gain_Fixed_M', 'Gain_Var_M']].copy()
+                        disp.columns = ['Year', 'Volume (KT)', 'OCP Cost ($M)',
+                                        'Market Cost ($M)', 'Value Gain ($M)',
+                                        'Gain Fixed ($M)', 'Gain Variable ($M)']
+                        st.dataframe(disp.round(1), use_container_width=True,
+                                     hide_index=True)
+
     # Footer
     st.markdown("---")
     st.markdown("""
