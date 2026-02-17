@@ -1446,17 +1446,18 @@ def main():
                     key='vol_total', help="Annual production capacity"
                 )
                 fixed_price_vol = st.number_input(
-                    "Fixed Price ($/ton)", 50.0, 300.0, 110.0, 5.0,
+                    "Fixed Price ($/ton) — base year", 50.0, 300.0, 110.0, 5.0,
                     key='vol_fixed_price'
                 )
             with vp2:
-                fixed_pct_vol = st.slider(
-                    "Fixed Price Volume %", 0, 100, 70, 5,
-                    key='vol_fixed_pct', help="Percentage of production at fixed price"
-                ) / 100.0
                 ocp_pct_vol = st.slider(
-                    "OCP Purchase Volume %", 0, 100, 100, 5,
-                    key='vol_ocp_pct', help="Percentage of production OCP buys"
+                    "OCP Purchase Volume %", 70, 100, 100, 5,
+                    key='vol_ocp_pct',
+                    help="OCP must buy at least 70% at fixed price. Extra volume (above 70%) is at variable price."
+                ) / 100.0
+                inflation_rate_vol = st.number_input(
+                    "Annual Inflation Rate (%)", 0.0, 15.0, 2.0, 0.5,
+                    key='vol_inflation', help="Annual inflation applied to fixed price"
                 ) / 100.0
             with vp3:
                 coeff_a_vol = st.number_input(
@@ -1468,26 +1469,38 @@ def main():
                     key='vol_premium_b', help="B in formula: Variable Price = A × FOB_NWE + B"
                 )
 
-            var_pct_vol = 1.0 - fixed_pct_vol
-            vol_fixed_kt = total_vol * fixed_pct_vol
-            vol_var_kt = total_vol * var_pct_vol
+            # Volume logic: 70% is ALWAYS fixed, variable = ocp_pct - 70%
+            fixed_pct_vol = 0.70
+            var_pct_vol = ocp_pct_vol - 0.70
+            vol_fixed_kt = total_vol * 0.70
+            vol_var_kt = total_vol * max(var_pct_vol, 0.0)
 
             # --- Formula Display Box ---
             st.markdown("")
             st.markdown("##### Pricing Formulas")
-            fc1, fc2 = st.columns(2)
+            fc1, fc2, fc3 = st.columns(3)
             with fc1:
                 st.markdown(f"""
                 <div class='formula-eq-box'>
                     <div class='formula-eq'>Fixed Price = {fixed_price_vol:.0f} $/t</div>
-                    <div class='formula-desc'>Applied to <b>{fixed_pct_vol*100:.0f}%</b> of volume ({vol_fixed_kt:.0f} KT)</div>
+                    <div class='formula-desc'>Applied to <b>70%</b> of volume ({vol_fixed_kt:.0f} KT)<br>
+                    Inflation: {inflation_rate_vol*100:.1f}%/yr</div>
                 </div>
                 """, unsafe_allow_html=True)
             with fc2:
                 st.markdown(f"""
                 <div class='formula-eq-box'>
-                    <div class='formula-eq'>Variable Price = {coeff_a_vol:.2f} × FOB<sub>NW Europe</sub> + {premium_b_vol:.0f}</div>
-                    <div class='formula-desc'>Applied to <b>{var_pct_vol*100:.0f}%</b> of volume ({vol_var_kt:.0f} KT) &mdash; Index: ACS FOB NW Europe (S&P)</div>
+                    <div class='formula-eq'>Variable Price = {coeff_a_vol:.2f} × FOB<sub>NWE</sub> + {premium_b_vol:.0f}</div>
+                    <div class='formula-desc'>Applied to <b>{var_pct_vol*100:.0f}%</b> of volume ({vol_var_kt:.0f} KT)<br>
+                    Index: ACS FOB NW Europe (S&P)</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with fc3:
+                st.markdown(f"""
+                <div class='formula-eq-box'>
+                    <div class='formula-eq'>OCP buys {ocp_pct_vol*100:.0f}% of production</div>
+                    <div class='formula-desc'>Total: {total_vol * ocp_pct_vol:.0f} KT
+                    = {vol_fixed_kt:.0f} KT fixed + {vol_var_kt:.0f} KT variable</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1502,6 +1515,27 @@ def main():
                 (vol_yearly['Year'] <= yr_range[1])
             ].copy()
 
+            # --- Override market projections ---
+            override_mkt = st.checkbox(
+                "Override market price projections",
+                value=False, key='vol_override_mkt'
+            )
+            if override_mkt:
+                st.markdown("Enter custom market prices (ACS CFR North Africa) per year:")
+                ovr_cols = st.columns(min(len(vol_yearly_f), 7))
+                for i, (_, row) in enumerate(vol_yearly_f.iterrows()):
+                    yr = int(row['Year'])
+                    default_val = float(row.get('ACS_CFR_NAfrica', 120))
+                    col_idx = i % len(ovr_cols)
+                    with ovr_cols[col_idx]:
+                        new_val = st.number_input(
+                            f"{yr}", 30.0, 500.0, round(default_val, 1), 5.0,
+                            key=f'vol_ovr_{yr}'
+                        )
+                        vol_yearly_f.loc[vol_yearly_f['Year'] == yr, 'ACS_CFR_NAfrica'] = new_val
+
+            base_year_vol = int(vol_yearly_f['Year'].min())
+
             # --- PERSPECTIVE SELECTOR ---
             st.markdown("")
             st.markdown("##### Perspective")
@@ -1515,7 +1549,9 @@ def main():
                 # === PROJECT PERSPECTIVE ===
                 proj_rev = build_project_revenue_table(
                     vol_yearly_f, total_vol, fixed_pct_vol,
-                    fixed_price_vol, coeff_a_vol, premium_b_vol
+                    fixed_price_vol, coeff_a_vol, premium_b_vol,
+                    inflation_rate=inflation_rate_vol,
+                    base_year=base_year_vol
                 )
 
                 # --- Key Metrics ---
@@ -1605,12 +1641,13 @@ def main():
                     marker=dict(size=5),
                     hovertemplate='<b>Weighted</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
                 ))
-                # Fixed price line
-                fig_prices.add_hline(
-                    y=fixed_price_vol,
+                # Fixed price line (with inflation)
+                fig_prices.add_trace(go.Scatter(
+                    x=proj_rev['Year'], y=proj_rev['Fixed_Price'],
+                    mode='lines', name=f'Fixed Price (base ${fixed_price_vol:.0f}/t + inflation)',
                     line=dict(color='#2563eb', width=1.5, dash='dash'),
-                    annotation_text=f'Fixed: ${fixed_price_vol:.0f}/t'
-                )
+                    hovertemplate='<b>Fixed</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                ))
                 # Negotiated price
                 fig_prices.add_trace(go.Scatter(
                     x=proj_rev['Year'], y=proj_rev['Negotiated_Price'],
@@ -1636,6 +1673,8 @@ def main():
                 sens = build_sensitivity_table(
                     vol_yearly_f, total_vol, fixed_price_vol,
                     coeff_a_vol, premium_b_vol,
+                    inflation_rate=inflation_rate_vol,
+                    base_year=base_year_vol,
                     splits=[0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
                 )
                 st.dataframe(sens, use_container_width=True, hide_index=True)
@@ -1661,13 +1700,17 @@ def main():
                 # === OCP PERSPECTIVE ===
                 ocp_scenarios = build_ocp_scenarios(
                     vol_yearly_f, total_vol, fixed_price_vol,
-                    coeff_a_vol, premium_b_vol
+                    coeff_a_vol, premium_b_vol,
+                    inflation_rate=inflation_rate_vol,
+                    base_year=base_year_vol
                 )
 
                 # Also build custom scenario with slider values
                 custom_ocp = build_custom_ocp_scenario(
-                    vol_yearly_f, total_vol, ocp_pct_vol, fixed_pct_vol,
-                    fixed_price_vol, coeff_a_vol, premium_b_vol
+                    vol_yearly_f, total_vol, ocp_pct_vol,
+                    fixed_price_vol, coeff_a_vol, premium_b_vol,
+                    inflation_rate=inflation_rate_vol,
+                    base_year=base_year_vol
                 )
 
                 # --- Key Metrics for custom scenario ---
@@ -1686,14 +1729,6 @@ def main():
 
                 # --- Graph 2: OCP Value Gain — Selected Scenario ---
                 st.markdown("---")
-
-                # Determine which scenario matches the user's OCP % + Fixed % selection
-                if ocp_pct_vol >= 0.99 and fixed_pct_vol >= 0.99:
-                    selected_scenario_key = '100% Fixed'
-                elif ocp_pct_vol < 0.99 and fixed_pct_vol >= 0.99:
-                    selected_scenario_key = '70% Fixed Only'
-                else:
-                    selected_scenario_key = '70% Fixed + 30% Negotiated'
 
                 # Use the custom scenario for the chart (reflects actual slider values)
                 fig_gain = go.Figure()
@@ -1714,8 +1749,8 @@ def main():
                         hovertemplate='<b>Variable Portion</b><br>%{x}<br>$%{y:.1f}M<extra></extra>'
                     ))
 
-                fig_gain.update_layout(barmode='stack')
-                scenario_label = f"OCP {ocp_pct_vol*100:.0f}% — Fixed {fixed_pct_vol*100:.0f}% / Variable {var_pct_vol*100:.0f}%"
+                fig_gain.update_layout(barmode='relative')
+                scenario_label = f"OCP {ocp_pct_vol*100:.0f}% — Fixed 70% / Variable {var_pct_vol*100:.0f}%"
                 chart_layout(fig_gain,
                              f'<b>OCP Value Gain — {scenario_label}</b><br>'
                              '<sup style="color:#6b7280">Positive = OCP saves vs market price</sup>',
@@ -1772,11 +1807,12 @@ def main():
                 be_years = vol_yearly_f['Year'].values
                 be_market = vol_yearly_f.get('ACS_CFR_NAfrica', pd.Series([120])).values
                 be_fob = vol_yearly_f.get('ACS_FOB_NWE', pd.Series([100])).values
-                be_blended = [compute_weighted_avg_price(
-                    fixed_price_vol,
-                    compute_negotiated_price(f, coeff_a_vol, premium_b_vol),
-                    fixed_pct_vol
-                ) for f in be_fob]
+                be_blended = []
+                for i, f in enumerate(be_fob):
+                    yr = int(be_years[i])
+                    fp_yr = fixed_price_vol * (1 + inflation_rate_vol) ** (yr - base_year_vol)
+                    neg = compute_negotiated_price(f, coeff_a_vol, premium_b_vol)
+                    be_blended.append(compute_weighted_avg_price(fp_yr, neg, fixed_pct_vol))
 
                 fig_be.add_trace(go.Scatter(
                     x=be_years, y=be_market,
@@ -1788,11 +1824,14 @@ def main():
                     mode='lines+markers', name='Blended Contract Price',
                     line=dict(color='#f59e0b', width=2.5)
                 ))
-                fig_be.add_hline(
-                    y=fixed_price_vol,
-                    line=dict(color='#2563eb', width=1.5, dash='dash'),
-                    annotation_text=f'Fixed: ${fixed_price_vol:.0f}/t'
-                )
+                # Fixed price with inflation line
+                be_fixed_inflated = [fixed_price_vol * (1 + inflation_rate_vol) ** (int(y) - base_year_vol)
+                                     for y in be_years]
+                fig_be.add_trace(go.Scatter(
+                    x=be_years, y=be_fixed_inflated,
+                    mode='lines', name='Fixed (with inflation)',
+                    line=dict(color='#2563eb', width=1.5, dash='dash')
+                ))
                 # Shade savings zone
                 fig_be.add_trace(go.Scatter(
                     x=list(be_years) + list(be_years[::-1]),

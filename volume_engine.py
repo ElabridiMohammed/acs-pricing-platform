@@ -136,7 +136,9 @@ def build_project_revenue_table(yearly: pd.DataFrame,
                                 fixed_pct: float = 0.70,
                                 fixed_price: float = 110.0,
                                 coeff_a: float = 1.0,
-                                premium_b: float = 0.0) -> pd.DataFrame:
+                                premium_b: float = 0.0,
+                                inflation_rate: float = 0.0,
+                                base_year: int = None) -> pd.DataFrame:
     """
     Build project revenue table (assumes 100% of production sold).
 
@@ -151,18 +153,24 @@ def build_project_revenue_table(yearly: pd.DataFrame,
     result = yearly[['Year']].copy()
     result['ACS_CFR_NAfrica'] = yearly.get('ACS_CFR_NAfrica', 120.0)
     result['ACS_FOB_NWE'] = yearly.get('ACS_FOB_NWE', 100.0)
-    result['Fixed_Price'] = fixed_price
+
+    # Apply inflation to fixed price
+    if base_year is None:
+        base_year = int(result['Year'].min())
+    result['Fixed_Price'] = result['Year'].apply(
+        lambda y: fixed_price * (1 + inflation_rate) ** (y - base_year)
+    )
     result['Negotiated_Price'] = result['ACS_FOB_NWE'].apply(
         lambda x: compute_negotiated_price(x, coeff_a, premium_b)
     )
     result['Weighted_Avg_Price'] = result.apply(
         lambda r: compute_weighted_avg_price(
-            fixed_price, r['Negotiated_Price'], fixed_pct
+            r['Fixed_Price'], r['Negotiated_Price'], fixed_pct
         ), axis=1
     )
     result['Vol_Fixed_KT'] = vol_fixed
     result['Vol_Var_KT'] = vol_var
-    result['Revenue_Fixed_M'] = vol_fixed * fixed_price / 1000.0
+    result['Revenue_Fixed_M'] = vol_fixed * result['Fixed_Price'] / 1000.0
     result['Revenue_Var_M'] = vol_var * result['Negotiated_Price'] / 1000.0
     result['Revenue_Total_M'] = result['Revenue_Fixed_M'] + result['Revenue_Var_M']
 
@@ -173,12 +181,14 @@ def build_ocp_scenarios(yearly: pd.DataFrame,
                         total_vol_kt: float = 750.0,
                         fixed_price: float = 110.0,
                         coeff_a: float = 1.0,
-                        premium_b: float = 0.0) -> dict:
+                        premium_b: float = 0.0,
+                        inflation_rate: float = 0.0,
+                        base_year: int = None) -> dict:
     """
     Build three OCP purchasing scenarios:
       1. OCP buys 70% at fixed only (525 KT)
-      2. OCP buys 100% at fixed price (750 KT)
-      3. OCP buys 70% fixed + 30% market/negotiated
+      2. OCP buys 100% — 70% fixed + 30% negotiated
+      3. OCP buys 85% — 70% fixed + 15% negotiated
 
     Returns dict of scenario name -> DataFrame with:
         Year, OCP_Volume_KT, OCP_Cost_M, Market_Cost_M, Value_Gain_M,
@@ -188,47 +198,55 @@ def build_ocp_scenarios(yearly: pd.DataFrame,
     fob_nwe = yearly.get('ACS_FOB_NWE', pd.Series([100.0]))
     neg_price = fob_nwe.apply(lambda x: compute_negotiated_price(x, coeff_a, premium_b))
 
+    if base_year is None:
+        base_year = int(yearly['Year'].min())
+    years = yearly['Year'].astype(int)
+    inflation_factors = (1 + inflation_rate) ** (years - base_year)
+
     scenarios = {}
 
-    # Scenario 1: OCP buys 70% at fixed only
-    vol = total_vol_kt * 0.70
+    # Scenario 1: OCP buys 70% at fixed only (minimum obligation)
+    vol_fixed = total_vol_kt * 0.70
     df1 = yearly[['Year']].copy()
     df1['Scenario'] = '70% Fixed Only'
-    df1['OCP_Volume_KT'] = vol
-    df1['OCP_Cost_M'] = vol * fixed_price / 1000.0
-    df1['Market_Cost_M'] = vol * market_price / 1000.0
+    df1['OCP_Volume_KT'] = vol_fixed
+    fp_inflated = fixed_price * inflation_factors
+    df1['OCP_Cost_M'] = vol_fixed * fp_inflated / 1000.0
+    df1['Market_Cost_M'] = vol_fixed * market_price / 1000.0
     df1['Value_Gain_M'] = df1['Market_Cost_M'] - df1['OCP_Cost_M']
     df1['Gain_Fixed_M'] = df1['Value_Gain_M']
     df1['Gain_Var_M'] = 0.0
-    df1['Avg_Price_Paid'] = fixed_price
+    df1['Avg_Price_Paid'] = fp_inflated.values
     scenarios['70% Fixed Only'] = df1
 
-    # Scenario 2: OCP buys 100% at fixed
-    vol = total_vol_kt
+    # Scenario 2: OCP buys 100% — 70% fixed + 30% negotiated
+    vol_fixed_2 = total_vol_kt * 0.70
+    vol_var_2 = total_vol_kt * 0.30
     df2 = yearly[['Year']].copy()
-    df2['Scenario'] = '100% Fixed'
-    df2['OCP_Volume_KT'] = vol
-    df2['OCP_Cost_M'] = vol * fixed_price / 1000.0
-    df2['Market_Cost_M'] = vol * market_price / 1000.0
+    df2['Scenario'] = '100% (70% Fixed + 30% Variable)'
+    df2['OCP_Volume_KT'] = total_vol_kt
+    df2['OCP_Cost_M'] = (vol_fixed_2 * fp_inflated + vol_var_2 * neg_price) / 1000.0
+    df2['Market_Cost_M'] = total_vol_kt * market_price / 1000.0
     df2['Value_Gain_M'] = df2['Market_Cost_M'] - df2['OCP_Cost_M']
-    df2['Gain_Fixed_M'] = df2['Value_Gain_M']
-    df2['Gain_Var_M'] = 0.0
-    df2['Avg_Price_Paid'] = fixed_price
-    scenarios['100% Fixed'] = df2
+    df2['Gain_Fixed_M'] = vol_fixed_2 * (market_price - fp_inflated) / 1000.0
+    df2['Gain_Var_M'] = vol_var_2 * (market_price - neg_price) / 1000.0
+    df2['Avg_Price_Paid'] = (vol_fixed_2 * fp_inflated + vol_var_2 * neg_price) / total_vol_kt
+    scenarios['100% (70F + 30V)'] = df2
 
-    # Scenario 3: 70% fixed + 30% negotiated
-    vol_fixed = total_vol_kt * 0.70
-    vol_var = total_vol_kt * 0.30
+    # Scenario 3: OCP buys 85% — 70% fixed + 15% negotiated
+    vol_fixed_3 = total_vol_kt * 0.70
+    vol_var_3 = total_vol_kt * 0.15
+    ocp_vol_3 = vol_fixed_3 + vol_var_3
     df3 = yearly[['Year']].copy()
-    df3['Scenario'] = '70% Fixed + 30% Negotiated'
-    df3['OCP_Volume_KT'] = total_vol_kt
-    df3['OCP_Cost_M'] = (vol_fixed * fixed_price + vol_var * neg_price) / 1000.0
-    df3['Market_Cost_M'] = total_vol_kt * market_price / 1000.0
+    df3['Scenario'] = '85% (70% Fixed + 15% Variable)'
+    df3['OCP_Volume_KT'] = ocp_vol_3
+    df3['OCP_Cost_M'] = (vol_fixed_3 * fp_inflated + vol_var_3 * neg_price) / 1000.0
+    df3['Market_Cost_M'] = ocp_vol_3 * market_price / 1000.0
     df3['Value_Gain_M'] = df3['Market_Cost_M'] - df3['OCP_Cost_M']
-    df3['Gain_Fixed_M'] = vol_fixed * (market_price - fixed_price) / 1000.0
-    df3['Gain_Var_M'] = vol_var * (market_price - neg_price) / 1000.0
-    df3['Avg_Price_Paid'] = (vol_fixed * fixed_price + vol_var * neg_price) / total_vol_kt
-    scenarios['70% Fixed + 30% Negotiated'] = df3
+    df3['Gain_Fixed_M'] = vol_fixed_3 * (market_price - fp_inflated) / 1000.0
+    df3['Gain_Var_M'] = vol_var_3 * (market_price - neg_price) / 1000.0
+    df3['Avg_Price_Paid'] = (vol_fixed_3 * fp_inflated + vol_var_3 * neg_price) / ocp_vol_3
+    scenarios['85% (70F + 15V)'] = df3
 
     return scenarios
 
@@ -236,36 +254,46 @@ def build_ocp_scenarios(yearly: pd.DataFrame,
 def build_custom_ocp_scenario(yearly: pd.DataFrame,
                               total_vol_kt: float,
                               ocp_pct: float,
-                              fixed_pct: float,
                               fixed_price: float,
                               coeff_a: float,
-                              premium_b: float) -> pd.DataFrame:
+                              premium_b: float,
+                              inflation_rate: float = 0.0,
+                              base_year: int = None) -> pd.DataFrame:
     """
-    Custom OCP scenario with user-defined purchase % and split.
+    Custom OCP scenario.
+    OCP is obligated to buy 70% of total at fixed price.
+    If ocp_pct > 70%, the extra volume is at negotiated (variable) price.
 
-    ocp_pct: fraction of total production OCP purchases (0-1)
-    fixed_pct: fraction of OCP's purchase at fixed price (0-1)
+    ocp_pct: fraction of total production OCP purchases (0.70 to 1.0)
+    Fixed volume is always 70% of total production.
+    Variable volume = (ocp_pct - 0.70) * total_vol_kt
     """
     market_price = yearly.get('ACS_CFR_NAfrica', pd.Series([120.0]))
     fob_nwe = yearly.get('ACS_FOB_NWE', pd.Series([100.0]))
     neg_price = fob_nwe.apply(lambda x: compute_negotiated_price(x, coeff_a, premium_b))
 
-    ocp_vol = total_vol_kt * ocp_pct
-    vol_fixed = ocp_vol * fixed_pct
-    vol_var = ocp_vol * (1.0 - fixed_pct)
+    if base_year is None:
+        base_year = int(yearly['Year'].min())
+    years = yearly['Year'].astype(int)
+    inflation_factors = (1 + inflation_rate) ** (years - base_year)
+    fp_inflated = fixed_price * inflation_factors
+
+    vol_fixed = total_vol_kt * 0.70  # Always 70% at fixed
+    vol_var = total_vol_kt * max(ocp_pct - 0.70, 0.0)  # Extra above 70%
+    ocp_vol = vol_fixed + vol_var
 
     df = yearly[['Year']].copy()
     df['OCP_Volume_KT'] = ocp_vol
     df['Vol_Fixed_KT'] = vol_fixed
     df['Vol_Var_KT'] = vol_var
-    df['OCP_Cost_M'] = (vol_fixed * fixed_price + vol_var * neg_price) / 1000.0
+    df['OCP_Cost_M'] = (vol_fixed * fp_inflated + vol_var * neg_price) / 1000.0
     df['Market_Cost_M'] = ocp_vol * market_price / 1000.0
     df['Value_Gain_M'] = df['Market_Cost_M'] - df['OCP_Cost_M']
-    df['Gain_Fixed_M'] = vol_fixed * (market_price - fixed_price) / 1000.0
+    df['Gain_Fixed_M'] = vol_fixed * (market_price - fp_inflated) / 1000.0
     df['Gain_Var_M'] = vol_var * (market_price - neg_price) / 1000.0
     df['Avg_Price_Paid'] = np.where(
         ocp_vol > 0,
-        (vol_fixed * fixed_price + vol_var * neg_price) / ocp_vol,
+        (vol_fixed * fp_inflated + vol_var * neg_price) / ocp_vol,
         0
     )
     return df
@@ -287,6 +315,8 @@ def build_sensitivity_table(yearly: pd.DataFrame,
                             fixed_price: float,
                             coeff_a: float,
                             premium_b: float,
+                            inflation_rate: float = 0.0,
+                            base_year: int = None,
                             splits: list = None) -> pd.DataFrame:
     """
     Generate sensitivity analysis for different volume splits.
@@ -298,7 +328,8 @@ def build_sensitivity_table(yearly: pd.DataFrame,
     rows = []
     for fp in splits:
         proj = build_project_revenue_table(
-            yearly, total_vol_kt, fp, fixed_price, coeff_a, premium_b
+            yearly, total_vol_kt, fp, fixed_price, coeff_a, premium_b,
+            inflation_rate=inflation_rate, base_year=base_year
         )
         avg_rev = proj['Revenue_Total_M'].mean()
         avg_price = proj['Weighted_Avg_Price'].mean()
