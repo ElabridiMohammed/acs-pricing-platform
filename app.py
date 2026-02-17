@@ -1,5 +1,5 @@
 """
-CRU Commodity Price Simulator & Formula Decision Platform
+S&P Commodity Price Simulator & Formula Decision Platform
 Tabs: Monte Carlo Simulation | Formula Lab & Decision
 Author: Mohammed ELABRIDI
 """
@@ -44,71 +44,364 @@ st.set_page_config(
 
 STYLES = """
 <style>
-    .stApp { background-color: #f8f9fc; }
+    /* ── Import professional font ── */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    /* ── Animations ── */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    @keyframes slideInLeft {
+        from { opacity: 0; transform: translateX(-20px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 2px 12px rgba(37,99,235,0.08); }
+        50%      { box-shadow: 0 4px 20px rgba(37,99,235,0.15); }
+    }
+
+    /* ── Global ── */
+    .stApp {
+        background: linear-gradient(135deg, #f8fafc 0%, #f0f4fa 50%, #eef2ff 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
     .stApp header { background-color: transparent; }
-    
+
+    /* ── Metric Cards ── */
     div[data-testid="metric-container"] {
         background: #ffffff;
-        border: 1px solid #e2e6ed; border-radius: 12px; padding: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: none;
+        border-radius: 16px;
+        padding: 22px 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+        animation: fadeInUp 0.5s ease-out both;
+        position: relative;
+        overflow: hidden;
     }
-    div[data-testid="metric-container"] label { color: #5a6a85 !important; font-size: 0.9rem; }
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #1a2332 !important; font-size: 1.8rem; font-weight: 600; }
-    
+    div[data-testid="metric-container"]::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #2563eb, #7c3aed, #2563eb);
+        background-size: 200% 100%;
+        animation: shimmer 3s ease-in-out infinite;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(37,99,235,0.12);
+    }
+    div[data-testid="metric-container"] label {
+        color: #64748b !important;
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+    }
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
+        color: #0f172a !important;
+        font-size: 1.7rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    /* ── Sidebar ── */
     section[data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #e2e6ed;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border-right: 1px solid #e2e8f0;
     }
     section[data-testid="stSidebar"] .stSelectbox label,
     section[data-testid="stSidebar"] .stSlider label,
-    section[data-testid="stSidebar"] .stRadio label { color: #3a4a65 !important; font-weight: 500; }
-    
-    h1, h2, h3 { color: #1a2332 !important; }
-    
+    section[data-testid="stSidebar"] .stRadio label {
+        color: #334155 !important;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    /* ── Typography ── */
+    h1, h2, h3 { color: #0f172a !important; letter-spacing: -0.3px; }
+
+    /* ── Buttons ── */
     .stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: white; border: none; border-radius: 8px;
-        padding: 10px 25px; font-weight: 600; transition: all 0.3s ease;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 11px 28px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+        letter-spacing: 0.2px;
     }
     .stButton > button:hover {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        box-shadow: 0 6px 20px rgba(37,99,235,0.35);
+        transform: translateY(-1px);
     }
-    
+
+    /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px; background: #eef1f6; border-radius: 10px; padding: 5px;
+        gap: 6px;
+        background: linear-gradient(135deg, #eef2f9 0%, #e8ecf4 100%);
+        border-radius: 14px;
+        padding: 6px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px; color: #5a6a85; font-weight: 600; padding: 10px 20px;
+        border-radius: 10px;
+        color: #64748b;
+        font-weight: 600;
+        padding: 12px 24px;
+        font-size: 0.92rem;
+        transition: all 0.3s ease;
+        letter-spacing: 0.1px;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #2563eb;
+        background: rgba(37,99,235,0.06);
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
         color: white !important;
+        box-shadow: 0 4px 14px rgba(37,99,235,0.3);
     }
-    
+
+    /* ── Cards ── */
     .formula-card {
         background: #ffffff;
-        border: 1px solid #e2e6ed; border-radius: 12px; padding: 20px;
-        margin: 10px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        border: none;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 12px 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+        animation: fadeInUp 0.5s ease-out both;
     }
-    .formula-card h4 { color: #2563eb; margin: 0 0 10px 0; }
-    .formula-card .value { font-size: 1.6rem; font-weight: 700; color: #1a2332; }
-    .formula-card .label { color: #5a6a85; font-size: 0.85rem; }
-    
+    .formula-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+    .formula-card h4 { color: #2563eb; margin: 0 0 10px 0; font-size: 1.05rem; }
+    .formula-card .value { font-size: 1.6rem; font-weight: 700; color: #0f172a; }
+    .formula-card .label { color: #64748b; font-size: 0.85rem; }
+
+    /* ── Formula Display Boxes ── */
     .formula-eq-box {
-        background: #f0f4ff; border: 1px solid #d0daf0; border-radius: 10px;
-        padding: 18px 24px; margin: 12px 0; text-align: center;
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8efff 100%);
+        border: 1px solid #c7d2fe;
+        border-radius: 14px;
+        padding: 22px 28px;
+        margin: 12px 0;
+        text-align: center;
+        transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+        animation: fadeInUp 0.6s ease-out both;
+    }
+    .formula-eq-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(37,99,235,0.1);
+        border-color: #818cf8;
     }
     .formula-eq {
-        font-family: 'Courier New', monospace; font-size: 1.2rem;
-        color: #1d4ed8; font-weight: 600;
+        font-family: 'Inter', monospace;
+        font-size: 1.15rem;
+        color: #1e40af;
+        font-weight: 700;
+        letter-spacing: 0.2px;
     }
     .formula-desc {
-        color: #5a6a85; font-size: 0.85rem; margin-top: 6px;
+        color: #64748b;
+        font-size: 0.85rem;
+        margin-top: 8px;
+        line-height: 1.5;
     }
-    
+
+    /* ── Section Headers ── */
+    .section-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+        border: none;
+        border-radius: 16px;
+        padding: 28px 32px;
+        margin: 8px 0 20px 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        animation: fadeInUp 0.4s ease-out both;
+        position: relative;
+        overflow: hidden;
+    }
+    .section-header::after {
+        content: '';
+        position: absolute; bottom: 0; left: 0;
+        width: 100%; height: 2px;
+        background: linear-gradient(90deg, #2563eb, #7c3aed, #06b6d4);
+    }
+    .section-header h2 {
+        margin: 0 0 4px 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    .section-header p {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    /* ── Perspective Toggle ── */
+    .perspective-card {
+        background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 24px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+        cursor: pointer;
+        animation: fadeIn 0.4s ease-out both;
+    }
+    .perspective-card:hover {
+        border-color: #2563eb;
+        box-shadow: 0 4px 16px rgba(37,99,235,0.1);
+    }
+
+    /* ── KPI Row ── */
+    .kpi-row {
+        display: flex;
+        gap: 16px;
+        margin: 16px 0;
+        animation: fadeInUp 0.5s ease-out both;
+    }
+    .kpi-item {
+        flex: 1;
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 20px 22px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-item::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #2563eb, #7c3aed);
+    }
+    .kpi-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 28px rgba(37,99,235,0.12);
+    }
+    .kpi-label {
+        font-size: 0.78rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .kpi-value {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.5px;
+    }
+    .kpi-delta {
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .kpi-delta.positive { color: #16a34a; }
+    .kpi-delta.negative { color: #dc2626; }
+
+    /* ── Data Tables ── */
+    .stDataFrame {
+        animation: fadeIn 0.5s ease-out both;
+    }
+    div[data-testid="stDataFrame"] > div {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    /* ── Expanders ── */
+    .streamlit-expanderHeader {
+        font-weight: 600;
+        color: #334155;
+        font-size: 0.95rem;
+    }
+
+    /* ── Dividers ── */
+    hr {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        margin: 24px 0;
+    }
+
+    /* ── Chart containers ── */
+    .stPlotlyChart {
+        animation: fadeIn 0.6s ease-out both;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    /* ── Radio buttons (perspective selector) ── */
+    .stRadio > div {
+        gap: 12px;
+    }
+    .stRadio > div > label {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 20px !important;
+        transition: all 0.25s ease;
+        font-weight: 500;
+    }
+    .stRadio > div > label:hover {
+        border-color: #2563eb;
+        background: #f8faff;
+    }
+    .stRadio > div > label[data-checked="true"] {
+        border-color: #2563eb;
+        background: linear-gradient(135deg, #eff6ff, #e0e7ff);
+        box-shadow: 0 2px 8px rgba(37,99,235,0.15);
+    }
+
+    /* ── Number inputs ── */
+    .stNumberInput > div > div > input {
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        transition: all 0.25s ease;
+    }
+    .stNumberInput > div > div > input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+
+    /* ── Sliders ── */
+    .stSlider > div > div > div[role="slider"] {
+        transition: all 0.2s ease;
+    }
+
     .gain { color: #16a34a !important; }
     .loss { color: #dc2626 !important; }
+
+    /* ── Footer ── */
+    .app-footer {
+        text-align: center;
+        padding: 30px 0 20px;
+        animation: fadeIn 0.6s ease-out both;
+    }
+    .app-footer p {
+        color: #94a3b8;
+        font-size: 0.82rem;
+        letter-spacing: 0.3px;
+    }
 </style>
 """
 st.markdown(STYLES, unsafe_allow_html=True)
@@ -285,24 +578,54 @@ def simulate_prices(trend, volatility, spike_freq, spike_intensity, spike_persis
     }
 
 
-# --- CHARTS (Light-mode color scheme) ---
+# --- CHARTS (Executive light-mode color scheme) ---
 
 CHART_BG = '#ffffff'
 CHART_PAPER = 'rgba(0,0,0,0)'
-GRID_COLOR = 'rgba(0,0,0,0.07)'
-FONT_COLOR = '#4a5568'
+GRID_COLOR = 'rgba(226,232,240,0.6)'
+FONT_COLOR = '#64748b'
 
-def chart_layout(fig, title, height=500, yaxis_title='Price (USD/t)'):
+def chart_layout(fig, title, height=520, yaxis_title='Price (USD/t)'):
     fig.update_layout(
-        title=dict(text=title, font=dict(size=16, color='#1a2332'), x=0.5),
-        xaxis=dict(gridcolor=GRID_COLOR, tickfont=dict(color=FONT_COLOR, size=11)),
-        yaxis=dict(title=yaxis_title, gridcolor=GRID_COLOR, tickfont=dict(color=FONT_COLOR, size=11),
-                   title_font=dict(color=FONT_COLOR)),
-        plot_bgcolor=CHART_BG, paper_bgcolor=CHART_PAPER,
-        legend=dict(bgcolor='rgba(255,255,255,0.95)', font=dict(color='#1a2332', size=10),
-                    bordercolor='#e2e6ed', borderwidth=1,
-                    orientation='h', yanchor='bottom', y=1.02, x=0.5, xanchor='center'),
-        hovermode='x unified', margin=dict(l=60, r=40, t=80, b=50), height=height
+        title=dict(
+            text=title,
+            font=dict(size=15, color='#0f172a', family='Inter, sans-serif'),
+            x=0.5, xanchor='center',
+            y=0.97, yanchor='top'
+        ),
+        xaxis=dict(
+            gridcolor=GRID_COLOR,
+            tickfont=dict(color=FONT_COLOR, size=11, family='Inter, sans-serif'),
+            linecolor='#e2e8f0', linewidth=1,
+            zeroline=False
+        ),
+        yaxis=dict(
+            title=yaxis_title,
+            gridcolor=GRID_COLOR,
+            tickfont=dict(color=FONT_COLOR, size=11, family='Inter, sans-serif'),
+            title_font=dict(color=FONT_COLOR, family='Inter, sans-serif'),
+            linecolor='#e2e8f0', linewidth=1,
+            zeroline=False
+        ),
+        plot_bgcolor=CHART_BG,
+        paper_bgcolor=CHART_PAPER,
+        legend=dict(
+            bgcolor='rgba(255,255,255,0.97)',
+            font=dict(color='#334155', size=11, family='Inter, sans-serif'),
+            bordercolor='#e2e8f0', borderwidth=1,
+            orientation='h', yanchor='bottom', y=1.12,
+            x=0.5, xanchor='center'
+        ),
+        hovermode='x unified',
+        hoverlabel=dict(
+            bgcolor='#1e293b',
+            font_size=12,
+            font_family='Inter, sans-serif',
+            font_color='white',
+            bordercolor='#334155'
+        ),
+        margin=dict(l=60, r=40, t=130, b=50),
+        height=height
     )
     return fig
 
@@ -315,8 +638,8 @@ def create_projection_chart(results, product_name, scenario_idx=0):
     fig.add_trace(go.Scatter(x=dates, y=results['percentile_5'], mode='lines', line=dict(width=0),
                               fill='tonexty', fillcolor='rgba(37,99,235,0.12)', name='95% Confidence', hoverinfo='skip'))
     fig.add_trace(go.Scatter(x=dates, y=results['trend'], mode='lines',
-                              line=dict(color='#dc2626', width=2.5, dash='dot'), name='CRU Outlook',
-                              hovertemplate='<b>CRU</b><br>%{x|%b %Y}<br>$%{y:.1f}/t<extra></extra>'))
+                              line=dict(color='#dc2626', width=2.5, dash='dot'), name='S&P Outlook',
+                              hovertemplate='<b>S&P</b><br>%{x|%b %Y}<br>$%{y:.1f}/t<extra></extra>'))
     fig.add_trace(go.Scatter(x=dates, y=path, mode='lines',
                               line=dict(color='#2563eb', width=2.5), name=f'Scenario #{scenario_idx + 1}',
                               hovertemplate='<b>Scenario</b><br>%{x|%b %Y}<br>$%{y:.1f}/t<extra></extra>'))
@@ -402,12 +725,14 @@ def create_scenario_formula_chart(scenario_result, product_name):
 
 def main():
     st.markdown("""
-    <div style='text-align: center; padding: 15px 0;'>
-        <h1 style='color: #2563eb; font-size: 2.3rem; margin-bottom: 5px;'>
+    <div style='text-align: center; padding: 24px 0 16px 0; animation: fadeInUp 0.6s ease-out both;'>
+        <h1 style='color: #0f172a; font-size: 2.2rem; margin-bottom: 4px; font-weight: 800;
+                   letter-spacing: -0.5px; font-family: Inter, sans-serif;'>
             ACS Pricing Decision Platform
         </h1>
-        <p style='color: #5a6a85; font-size: 1rem;'>
-            Monte Carlo Simulation  |  Formula Analysis  |  Revenue Optimization
+        <p style='color: #64748b; font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase;
+                  font-weight: 500; font-family: Inter, sans-serif;'>
+            Monte Carlo Simulation &nbsp;&bull;&nbsp; Formula Analysis &nbsp;&bull;&nbsp; Revenue Optimization
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -445,7 +770,7 @@ def main():
     # ============================================================
     with tab1:
         with st.sidebar:
-            st.markdown("<h2 style='color: #2563eb; text-align: center;'>Parameters</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='color: #2563eb; text-align: center; font-family: Inter, sans-serif; font-weight: 700;'>Parameters</h2>", unsafe_allow_html=True)
             st.markdown("---")
             
             st.markdown("### Product")
@@ -484,8 +809,8 @@ def main():
             end_year = c2.selectbox("End", [2030, 2032, 2035], index=2, key='ey')
             
             st.markdown("---")
-            st.markdown("### CRU Outlook (Editable)")
-            cru_editable = st.checkbox("Override CRU values", value=False, key='cru_edit')
+            st.markdown("### S&P Outlook (Editable)")
+            cru_editable = st.checkbox("Override S&P values", value=False, key='cru_edit')
             cru_overrides = {}
             if cru_editable:
                 for yr in range(start_year, end_year + 1):
@@ -573,7 +898,7 @@ def main():
             avg_outlook = np.mean(results['trend'])
             avg_sim = np.mean(results['mean_path'])
             delta = ((avg_sim - avg_outlook) / avg_outlook) * 100
-            cols[0].metric("CRU Outlook", f"${avg_outlook:.0f}/t")
+            cols[0].metric("S&P Outlook", f"${avg_outlook:.0f}/t")
             cols[1].metric("Simulated Mean", f"${avg_sim:.0f}/t", f"{delta:+.1f}%",
                           delta_color="inverse" if delta > 0 else "normal")
             cols[2].metric("95th Pctl Max", f"${np.max(results['percentile_95']):.0f}/t")
@@ -1094,8 +1419,12 @@ def main():
     # TAB 3: CONTRACT IMPACT ANALYSIS (Volume-Based Revenue)
     # ============================================================
     with tab3:
-        st.markdown("### Contract Impact Analysis")
-        st.markdown("<p style='color: #5a6a85;'>Volume-based pricing model — Compare contract scenarios with OCP</p>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class='section-header'>
+            <h2>Contract Impact Analysis</h2>
+            <p>Volume-based pricing model — Compare contract scenarios with OCP</p>
+        </div>
+        """, unsafe_allow_html=True)
 
         # --- Load data ---
         try:
@@ -1108,8 +1437,8 @@ def main():
 
         if vol_data_ok:
             # --- SIDEBAR-LIKE CONTROLS (in-tab) ---
-            st.markdown("---")
-            st.markdown("#### Parameters")
+            st.markdown("")
+            st.markdown("##### Parameters")
             vp1, vp2, vp3 = st.columns(3)
             with vp1:
                 total_vol = st.number_input(
@@ -1131,17 +1460,36 @@ def main():
                 ) / 100.0
             with vp3:
                 coeff_a_vol = st.number_input(
-                    "Coefficient A (FOB_IO multiplier)", 0.1, 3.0, 1.0, 0.05,
-                    key='vol_coeff_a', help="A in formula A × FOB_IO + B"
+                    "Coefficient A (FOB NW Europe multiplier)", 0.1, 3.0, 1.0, 0.05,
+                    key='vol_coeff_a', help="A in formula: Variable Price = A × FOB_NWE + B"
                 )
                 premium_b_vol = st.number_input(
                     "Premium/Discount B ($)", -50.0, 100.0, 0.0, 5.0,
-                    key='vol_premium_b', help="B in formula A × FOB_IO + B"
+                    key='vol_premium_b', help="B in formula: Variable Price = A × FOB_NWE + B"
                 )
 
             var_pct_vol = 1.0 - fixed_pct_vol
             vol_fixed_kt = total_vol * fixed_pct_vol
             vol_var_kt = total_vol * var_pct_vol
+
+            # --- Formula Display Box ---
+            st.markdown("")
+            st.markdown("##### Pricing Formulas")
+            fc1, fc2 = st.columns(2)
+            with fc1:
+                st.markdown(f"""
+                <div class='formula-eq-box'>
+                    <div class='formula-eq'>Fixed Price = {fixed_price_vol:.0f} $/t</div>
+                    <div class='formula-desc'>Applied to <b>{fixed_pct_vol*100:.0f}%</b> of volume ({vol_fixed_kt:.0f} KT)</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with fc2:
+                st.markdown(f"""
+                <div class='formula-eq-box'>
+                    <div class='formula-eq'>Variable Price = {coeff_a_vol:.2f} × FOB<sub>NW Europe</sub> + {premium_b_vol:.0f}</div>
+                    <div class='formula-desc'>Applied to <b>{var_pct_vol*100:.0f}%</b> of volume ({vol_var_kt:.0f} KT) &mdash; Index: ACS FOB NW Europe (S&P)</div>
+                </div>
+                """, unsafe_allow_html=True)
 
             # Filter years
             yr_range = st.slider(
@@ -1155,13 +1503,15 @@ def main():
             ].copy()
 
             # --- PERSPECTIVE SELECTOR ---
-            st.markdown("---")
+            st.markdown("")
+            st.markdown("##### Perspective")
             perspective = st.radio(
-                "Perspective", ["Project Perspective", "OCP Perspective"],
-                horizontal=True, key='vol_perspective'
+                "Select analysis viewpoint", ["Project Perspective", "OCP Perspective"],
+                horizontal=True, key='vol_perspective',
+                label_visibility='collapsed'
             )
 
-            if perspective == "Project Perspective":
+            if "Project" in perspective:
                 # === PROJECT PERSPECTIVE ===
                 proj_rev = build_project_revenue_table(
                     vol_yearly_f, total_vol, fixed_pct_vol,
@@ -1169,7 +1519,7 @@ def main():
                 )
 
                 # --- Key Metrics ---
-                st.markdown("#### Key Metrics")
+                st.markdown("##### Key Metrics")
                 pm1, pm2, pm3, pm4, pm5 = st.columns(5)
                 avg_rev = proj_rev['Revenue_Total_M'].mean()
                 avg_wp = proj_rev['Weighted_Avg_Price'].mean()
@@ -1269,20 +1619,20 @@ def main():
                     marker=dict(size=4),
                     hovertemplate='<b>Negotiated</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
                 ))
-                # FOB IO index
+                # FOB NW Europe index
                 fig_prices.add_trace(go.Scatter(
-                    x=proj_rev['Year'], y=proj_rev['FOB_IO'],
-                    mode='lines', name='FOB India/Indonesia',
+                    x=proj_rev['Year'], y=proj_rev['ACS_FOB_NWE'],
+                    mode='lines', name='FOB NW Europe (S&P)',
                     line=dict(color='#6366f1', width=1.5, dash='dashdot'),
-                    hovertemplate='<b>FOB IO</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
+                    hovertemplate='<b>FOB NW Europe</b><br>%{x}<br>$%{y:.1f}/t<extra></extra>'
                 ))
                 chart_layout(fig_prices, '<b>Price Comparison</b>',
                              yaxis_title='Price ($/t)')
                 st.plotly_chart(fig_prices, use_container_width=True)
 
                 # --- Sensitivity Table ---
-                st.markdown("---")
-                st.markdown("#### Sensitivity — Volume Split Impact")
+                st.markdown("")
+                st.markdown("##### Sensitivity — Volume Split Impact")
                 sens = build_sensitivity_table(
                     vol_yearly_f, total_vol, fixed_price_vol,
                     coeff_a_vol, premium_b_vol,
@@ -1291,15 +1641,15 @@ def main():
                 st.dataframe(sens, use_container_width=True, hide_index=True)
 
                 # --- Revenue Heatmap (additional useful chart) ---
-                st.markdown("#### Revenue by Year")
+                st.markdown("##### Revenue by Year")
                 with st.expander("Detailed Revenue Data"):
-                    disp_cols = ['Year', 'ACS_CFR_NAfrica', 'FOB_IO',
+                    disp_cols = ['Year', 'ACS_CFR_NAfrica', 'ACS_FOB_NWE',
                                  'Fixed_Price', 'Negotiated_Price',
                                  'Weighted_Avg_Price', 'Revenue_Fixed_M',
                                  'Revenue_Var_M', 'Revenue_Total_M']
                     disp_df = proj_rev[[c for c in disp_cols if c in proj_rev.columns]].copy()
                     disp_df.columns = [
-                        'Year', 'Market ($/t)', 'FOB IO ($/t)',
+                        'Year', 'Market ($/t)', 'FOB NW Europe ($/t)',
                         'Fixed ($/t)', 'Negotiated ($/t)',
                         'Weighted Avg ($/t)', 'Rev Fixed ($M)',
                         'Rev Var ($M)', 'Rev Total ($M)'
@@ -1321,7 +1671,7 @@ def main():
                 )
 
                 # --- Key Metrics for custom scenario ---
-                st.markdown("#### OCP Custom Scenario Metrics")
+                st.markdown("##### OCP Custom Scenario Metrics")
                 om1, om2, om3, om4 = st.columns(4)
                 avg_cost = custom_ocp['OCP_Cost_M'].mean()
                 avg_mkt_cost = custom_ocp['Market_Cost_M'].mean()
@@ -1334,38 +1684,40 @@ def main():
                 om3.metric("Avg Value Gain", f"${avg_gain:+.1f}M/yr")
                 om4.metric("Avg Price Paid", f"${avg_price:.0f}/t")
 
-                # --- Graph 2: OCP Value Gain Comparison (Stacked Bars) ---
+                # --- Graph 2: OCP Value Gain — Selected Scenario ---
                 st.markdown("---")
+
+                # Determine which scenario matches the user's OCP % + Fixed % selection
+                if ocp_pct_vol >= 0.99 and fixed_pct_vol >= 0.99:
+                    selected_scenario_key = '100% Fixed'
+                elif ocp_pct_vol < 0.99 and fixed_pct_vol >= 0.99:
+                    selected_scenario_key = '70% Fixed Only'
+                else:
+                    selected_scenario_key = '70% Fixed + 30% Negotiated'
+
+                # Use the custom scenario for the chart (reflects actual slider values)
                 fig_gain = go.Figure()
-                scenario_names = list(ocp_scenarios.keys())
-                colors_fixed = ['#2563eb', '#3b82f6', '#60a5fa']
-                colors_var = ['#f59e0b', '#fbbf24', '#fcd34d']
-
-                for idx, (sname, sdf) in enumerate(ocp_scenarios.items()):
+                fig_gain.add_trace(go.Bar(
+                    x=custom_ocp['Year'].astype(str),
+                    y=custom_ocp['Gain_Fixed_M'],
+                    name='Fixed Portion Gain',
+                    marker_color='#2563eb',
+                    hovertemplate='<b>Fixed Portion</b><br>%{x}<br>$%{y:.1f}M<extra></extra>'
+                ))
+                # Only add Variable portion if there actually is one
+                if custom_ocp['Gain_Var_M'].abs().sum() > 0.01:
                     fig_gain.add_trace(go.Bar(
-                        x=sdf['Year'].astype(str),
-                        y=sdf['Gain_Fixed_M'],
-                        name=f'{sname} — Fixed portion',
-                        marker_color=colors_fixed[idx % len(colors_fixed)],
-                        offsetgroup=str(idx),
-                        hovertemplate=f'<b>{sname} (Fixed)</b><br>' + '%{x}<br>$%{y:.1f}M<extra></extra>'
-                    ))
-                    fig_gain.add_trace(go.Bar(
-                        x=sdf['Year'].astype(str),
-                        y=sdf['Gain_Var_M'],
-                        name=f'{sname} — Variable portion',
-                        marker_color=colors_var[idx % len(colors_var)],
-                        offsetgroup=str(idx),
-                        base=sdf['Gain_Fixed_M'],
-                        hovertemplate=f'<b>{sname} (Variable)</b><br>' + '%{x}<br>$%{y:.1f}M<extra></extra>'
+                        x=custom_ocp['Year'].astype(str),
+                        y=custom_ocp['Gain_Var_M'],
+                        name='Variable Portion Gain',
+                        marker_color='#f59e0b',
+                        hovertemplate='<b>Variable Portion</b><br>%{x}<br>$%{y:.1f}M<extra></extra>'
                     ))
 
-                fig_gain.update_layout(
-                    barmode='group',
-                    bargroupgap=0.1,
-                )
+                fig_gain.update_layout(barmode='stack')
+                scenario_label = f"OCP {ocp_pct_vol*100:.0f}% — Fixed {fixed_pct_vol*100:.0f}% / Variable {var_pct_vol*100:.0f}%"
                 chart_layout(fig_gain,
-                             '<b>OCP Value Gain Comparison</b><br>'
+                             f'<b>OCP Value Gain — {scenario_label}</b><br>'
                              '<sup style="color:#6b7280">Positive = OCP saves vs market price</sup>',
                              yaxis_title='Value Gain ($M)')
                 fig_gain.add_hline(y=0, line=dict(color='#94a3b8', width=1))
@@ -1414,12 +1766,12 @@ def main():
                 st.plotly_chart(fig_cum, use_container_width=True)
 
                 # --- Breakeven Analysis chart ---
-                st.markdown("---")
-                st.markdown("#### Breakeven Analysis")
+                st.markdown("")
+                st.markdown("##### Breakeven Analysis")
                 fig_be = go.Figure()
                 be_years = vol_yearly_f['Year'].values
                 be_market = vol_yearly_f.get('ACS_CFR_NAfrica', pd.Series([120])).values
-                be_fob = vol_yearly_f.get('FOB_IO', pd.Series([100])).values
+                be_fob = vol_yearly_f.get('ACS_FOB_NWE', pd.Series([100])).values
                 be_blended = [compute_weighted_avg_price(
                     fixed_price_vol,
                     compute_negotiated_price(f, coeff_a_vol, premium_b_vol),
@@ -1457,8 +1809,8 @@ def main():
                 st.plotly_chart(fig_be, use_container_width=True)
 
                 # --- Scenario Summary Table ---
-                st.markdown("---")
-                st.markdown("#### Scenario Comparison Summary")
+                st.markdown("")
+                st.markdown("##### Scenario Comparison Summary")
                 summary_rows = []
                 for sname, sdf in ocp_scenarios.items():
                     summary_rows.append({
@@ -1488,10 +1840,10 @@ def main():
                                      hide_index=True)
 
     # Footer
-    st.markdown("---")
+    st.markdown("")
     st.markdown("""
-    <div style='text-align: center; color: #5a6a85; font-size: 0.85rem;'>
-        Built by Mohammed ELABRIDI | Data: CRU Outlook & ACS Pricing Simulator
+    <div class='app-footer'>
+        <p>Built by <b>Mohammed ELABRIDI</b> · Data: S&P Annual Prices & ACS Pricing Simulator</p>
     </div>
     """, unsafe_allow_html=True)
 

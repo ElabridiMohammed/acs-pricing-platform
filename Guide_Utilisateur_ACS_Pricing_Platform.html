@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide d'Utilisation — ACS Pricing Decision Platform</title>
+<style>
+  @page { margin: 2cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1a2332; background: #f8f9fc; line-height: 1.7;
+    max-width: 900px; margin: 0 auto; padding: 40px 30px;
+  }
+  h1 { color: #2563eb; font-size: 2rem; text-align: center; margin-bottom: 5px; }
+  .subtitle { text-align: center; color: #5a6a85; font-size: 1rem; margin-bottom: 40px; }
+  h2 { color: #2563eb; font-size: 1.4rem; margin: 35px 0 15px; border-bottom: 2px solid #e2e6ed; padding-bottom: 8px; }
+  h3 { color: #1a2332; font-size: 1.15rem; margin: 20px 0 10px; }
+  p, li { font-size: 0.95rem; color: #3a4a65; }
+  ul, ol { margin-left: 25px; margin-bottom: 15px; }
+  li { margin-bottom: 6px; }
+
+  .card {
+    background: #fff; border: 1px solid #e2e6ed; border-radius: 12px;
+    padding: 20px 25px; margin: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .card h4 { color: #2563eb; margin-bottom: 8px; font-size: 1.05rem; }
+
+  .tip {
+    background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 0 8px 8px 0;
+    padding: 14px 18px; margin: 15px 0;
+  }
+  .tip strong { color: #2563eb; }
+
+  .warning {
+    background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;
+    padding: 14px 18px; margin: 15px 0;
+  }
+  .warning strong { color: #d97706; }
+
+  .formula-box {
+    background: #f0f4ff; border: 1px solid #d0daf0; border-radius: 10px;
+    padding: 16px 22px; margin: 12px 0; text-align: center;
+  }
+  .formula-box code {
+    font-family: 'Courier New', monospace; font-size: 1.1rem;
+    color: #1d4ed8; font-weight: 600;
+  }
+  .formula-box .desc { color: #5a6a85; font-size: 0.85rem; margin-top: 5px; }
+
+  .screenshot-placeholder {
+    background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px;
+    padding: 30px; text-align: center; margin: 15px 0; color: #94a3b8;
+    font-style: italic; min-height: 120px; display: flex;
+    align-items: center; justify-content: center; flex-direction: column;
+  }
+  .screenshot-placeholder .icon { font-size: 2rem; margin-bottom: 8px; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 15px 0;
+    font-size: 0.9rem; background: #fff; border-radius: 8px; overflow: hidden;
+    border: 1px solid #e2e6ed;
+  }
+  th { background: #2563eb; color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+  tr:nth-child(even) { background: #f8f9fc; }
+
+  .step-number {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; background: #2563eb; color: white;
+    border-radius: 50%; font-weight: 700; font-size: 0.9rem; margin-right: 10px;
+  }
+  .step { display: flex; align-items: flex-start; margin: 12px 0; }
+  .step-content { flex: 1; }
+
+  .tab-badge {
+    display: inline-block; background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white; padding: 3px 12px; border-radius: 6px; font-size: 0.8rem;
+    font-weight: 600; margin-right: 6px; vertical-align: middle;
+  }
+
+  .toc { background: #fff; border: 1px solid #e2e6ed; border-radius: 12px; padding: 25px 30px; margin: 25px 0; }
+  .toc h3 { color: #2563eb; margin-bottom: 12px; }
+  .toc ol { counter-reset: toc; list-style: none; margin-left: 0; }
+  .toc li { counter-increment: toc; margin: 6px 0; }
+  .toc li::before { content: counter(toc) ". "; color: #2563eb; font-weight: 600; }
+  .toc a { color: #3a4a65; text-decoration: none; }
+  .toc a:hover { color: #2563eb; text-decoration: underline; }
+
+  .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+  @media (max-width: 600px) { .param-grid { grid-template-columns: 1fr; } }
+
+  .footer { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e6ed; }
+</style>
+</head>
+<body>
+
+<h1>📊 ACS Pricing Decision Platform</h1>
+<p class="subtitle">Guide d'Utilisation — v2.0 | Février 2026</p>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h3>Table des Matières</h3>
+  <ol>
+    <li><a href="#overview">Vue d'ensemble</a></li>
+    <li><a href="#launch">Lancement de l'outil</a></li>
+    <li><a href="#tab1">Onglet 1 — Monte Carlo Simulation</a></li>
+    <li><a href="#tab2">Onglet 2 — Formula Lab & Decision</a></li>
+    <li><a href="#tab3">Onglet 3 — Contract Impact Analysis</a></li>
+    <li><a href="#formulas">Formules de Calcul</a></li>
+    <li><a href="#glossary">Glossaire</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ol>
+</div>
+
+<!-- 1. OVERVIEW -->
+<h2 id="overview">1. Vue d'ensemble</h2>
+<p>L'<strong>ACS Pricing Decision Platform</strong> est un outil interactif conçu pour analyser et simuler les prix de l'acide sulfurique (ACS) dans le cadre de contrats à long terme avec OCP.</p>
+
+<div class="card">
+  <h4>L'outil comprend 3 onglets :</h4>
+  <table>
+    <tr>
+      <th>Onglet</th>
+      <th>Objectif</th>
+    </tr>
+    <tr>
+      <td><span class="tab-badge">Tab 1</span> Monte Carlo Simulation</td>
+      <td>Projection des prix futurs avec intervalles de confiance (simulations Monte Carlo)</td>
+    </tr>
+    <tr>
+      <td><span class="tab-badge">Tab 2</span> Formula Lab & Decision</td>
+      <td>Comparaison de 6 formules de prix vs marché, backtesting, analyse de décision</td>
+    </tr>
+    <tr>
+      <td><span class="tab-badge">Tab 3</span> Contract Impact Analysis</td>
+      <td>Analyse revenue basée sur les volumes — Scénarios OCP vs Marché</td>
+    </tr>
+  </table>
+</div>
+
+<div class="tip">
+  <strong>💡 Source des données :</strong> Les données de prix historiques et projections proviennent des données annuelles <strong>S&P</strong> (fichier Excel fourni par Anas). L'indice de référence marché est <strong>ACS CFR North Africa</strong>.
+</div>
+
+
+<!-- 2. LAUNCH -->
+<h2 id="launch">2. Lancement de l'outil</h2>
+
+<div class="step">
+  <span class="step-number">1</span>
+  <div class="step-content">
+    <strong>Ouvrir un terminal</strong> dans le dossier du projet<br>
+    <code style="background:#f0f4ff; padding: 4px 10px; border-radius: 5px; font-size: 0.9rem;">cd "domaine project"</code>
+  </div>
+</div>
+<div class="step">
+  <span class="step-number">2</span>
+  <div class="step-content">
+    <strong>Lancer l'application</strong><br>
+    <code style="background:#f0f4ff; padding: 4px 10px; border-radius: 5px; font-size: 0.9rem;">streamlit run app.py</code>
+  </div>
+</div>
+<div class="step">
+  <span class="step-number">3</span>
+  <div class="step-content">
+    <strong>Le navigateur s'ouvre automatiquement</strong> sur <code style="background:#f0f4ff; padding: 3px 8px; border-radius: 4px;">http://localhost:8501</code>
+  </div>
+</div>
+
+<div class="screenshot-placeholder">
+  <div class="icon">🖥️</div>
+  <div>Screenshot : Page d'accueil avec les 3 onglets visibles en haut</div>
+</div>
+
+
+<!-- 3. TAB 1 -->
+<h2 id="tab1">3. Onglet 1 — Monte Carlo Simulation</h2>
+<p>Cet onglet génère des <strong>projections de prix</strong> via des simulations Monte Carlo basées sur les données historiques et les perspectives S&P.</p>
+
+<h3>3.1 Paramètres (barre latérale gauche)</h3>
+
+<div class="param-grid">
+  <div class="card">
+    <h4>Product</h4>
+    <p>Sélectionnez la variable à simuler :<br>
+    <strong>ACS CFR North Africa</strong> (par défaut), ACS NW EU, ACS Japan, etc.</p>
+  </div>
+  <div class="card">
+    <h4>Horizon</h4>
+    <p>Définissez la période de projection :<br>
+    <strong>Start</strong> (ex: 2025) → <strong>End</strong> (ex: 2035)</p>
+  </div>
+  <div class="card">
+    <h4>S&P Outlook</h4>
+    <p>Cochez "Override S&P values" pour modifier manuellement les projections annuelles S&P utilisées comme tendance de base.</p>
+  </div>
+  <div class="card">
+    <h4>Volatility</h4>
+    <p><strong>Use Historical</strong> = volatilité calculée automatiquement.<br>
+    <strong>Multiplier</strong> = amplifier/réduire la volatilité (1.0 = normal).</p>
+  </div>
+</div>
+
+<div class="screenshot-placeholder">
+  <div class="icon">📊</div>
+  <div>Screenshot : Graphe de simulation Monte Carlo avec bandes de confiance 5%-95%</div>
+</div>
+
+<h3>3.2 Résultats</h3>
+<ul>
+  <li><strong>Graphe de Projection</strong> — La ligne rouge pointillée = perspective S&P, la bande bleue = intervalle de confiance 95%, la ligne bleue = un scénario Monte Carlo</li>
+  <li><strong>Key Metrics</strong> — S&P Outlook moyen, moyenne simulée, 95th percentile max, 5th percentile min</li>
+  <li><strong>Distribution</strong> — Histogramme de distribution des prix simulés pour une année donnée</li>
+</ul>
+
+<div class="tip">
+  <strong>💡 Comment interpréter :</strong> Si la bande bleue est large, cela signifie une forte incertitude. Si la ligne simulée est au-dessus de la ligne S&P, le marché pourrait être plus favorable que prévu.
+</div>
+
+
+<!-- 4. TAB 2 -->
+<h2 id="tab2">4. Onglet 2 — Formula Lab & Decision</h2>
+<p>Cet onglet permet de comparer <strong>6 formules de prix</strong> avec le prix marché réel, via backtesting historique et projection.</p>
+
+<h3>4.1 Les 6 Formules</h3>
+<table>
+  <tr><th>Formule</th><th>Description</th><th>Inputs clés</th></tr>
+  <tr><td><strong>F1</strong></td><td>Sulfur Indexing Only</td><td>Soufre ME + NA, coût de production</td></tr>
+  <tr><td><strong>F2</strong></td><td>Smooth Sulfur Indexing</td><td>Comme F1 mais avec moyenne mobile lissée</td></tr>
+  <tr><td><strong>F3</strong></td><td>Last Month ACS Indexing</td><td>Prix ACS du mois précédent (pondération régionale)</td></tr>
+  <tr><td><strong>F4</strong></td><td>S & DAP Variation Indexing</td><td>Variation soufre + DAP vs référence</td></tr>
+  <tr><td><strong>F5</strong></td><td>Smooth S & DAP Indexing</td><td>Comme F4 avec inputs lissés</td></tr>
+  <tr><td><strong>F6</strong></td><td>S, DAP, Petcoke & Clinker</td><td>Stack complet : soufre + DAP + petcoke + clinker</td></tr>
+</table>
+
+<h3>4.2 Paramètres de chaque formule</h3>
+<ul>
+  <li><strong>Coefficient a</strong> — Pondération principale de la formule</li>
+  <li><strong>Floor / Cap</strong> — Prix plancher et plafond pour limiter les variations extrêmes</li>
+  <li>Chaque formule a ses propres paramètres ajustables dans la barre latérale</li>
+</ul>
+
+<h3>4.3 Résultats</h3>
+<ul>
+  <li><strong>Backtest Chart</strong> — Formule vs marché sur l'historique (2022-2025)</li>
+  <li><strong>Forward Chart</strong> — Projection de la formule vs perspectives S&P (2025-2035)</li>
+  <li><strong>Metrics</strong> — RMSE, tracking error, distance moyenne, % du temps au-dessus/en-dessous du marché</li>
+  <li><strong>Decision Matrix</strong> — Tableau comparatif de toutes les formules pour aide à la décision</li>
+</ul>
+
+<div class="screenshot-placeholder">
+  <div class="icon">📈</div>
+  <div>Screenshot : Formula Lab avec graphe Backtest (formule vs marché)</div>
+</div>
+
+
+<!-- 5. TAB 3 -->
+<h2 id="tab3">5. Onglet 3 — Contract Impact Analysis</h2>
+<p>C'est l'onglet principal pour <strong>l'analyse des revenus</strong> basée sur les volumes et les scénarios de contrat avec OCP.</p>
+
+<h3>5.1 Paramètres</h3>
+
+<div class="param-grid">
+  <div class="card">
+    <h4>Total Production Volume</h4>
+    <p>Capacité annuelle de production en KT (par défaut : <strong>750 KT</strong>)</p>
+  </div>
+  <div class="card">
+    <h4>Fixed Price</h4>
+    <p>Prix fixe contractuel en $/tonne (par défaut : <strong>110 $/t</strong>)</p>
+  </div>
+  <div class="card">
+    <h4>Fixed Price Volume %</h4>
+    <p>Pourcentage de la production vendu au prix fixe (par défaut : <strong>70%</strong>)</p>
+  </div>
+  <div class="card">
+    <h4>OCP Purchase Volume %</h4>
+    <p>Part de la production totale achetée par OCP (par défaut : <strong>100%</strong>)</p>
+  </div>
+  <div class="card">
+    <h4>Coefficient A</h4>
+    <p>Multiplicateur de l'indice FOB NW Europe dans la formule variable</p>
+  </div>
+  <div class="card">
+    <h4>Premium/Discount B</h4>
+    <p>Prime ou remise ajoutée à la formule variable (en $/t)</p>
+  </div>
+</div>
+
+<h3>5.2 Formules de Prix</h3>
+<p>L'outil affiche clairement les deux formules utilisées :</p>
+
+<div class="formula-box">
+  <code>Prix Fixe = 110 $/t</code>
+  <div class="desc">Appliqué à 70% du volume (525 KT) — prix contractuel fixe</div>
+</div>
+<div class="formula-box">
+  <code>Prix Variable = A × FOB<sub>NW Europe</sub> + B</code>
+  <div class="desc">Appliqué à 30% du volume (225 KT) — indexé sur l'ACS FOB NW Europe (données S&P)</div>
+</div>
+
+<div class="formula-box">
+  <code>Prix Moyen Pondéré = 70% × Prix Fixe + 30% × Prix Variable</code>
+  <div class="desc">Prix effectif moyen payé par tonne</div>
+</div>
+
+<div class="tip">
+  <strong>💡 Exemple :</strong> Si Fixed Price = 110 $/t, A = 1.0, B = 0, et FOB NW Europe = 95 $/t :<br>
+  → Prix variable = 1.0 × 95 + 0 = <strong>95 $/t</strong><br>
+  → Prix moyen = 70% × 110 + 30% × 95 = <strong>105.5 $/t</strong>
+</div>
+
+<h3>5.3 Perspective Projet (Project Perspective)</h3>
+<p>Sélectionnez <strong>"Project Perspective"</strong> pour voir l'analyse du point de vue du vendeur/projet :</p>
+
+<div class="screenshot-placeholder">
+  <div class="icon">💰</div>
+  <div>Screenshot : Business Plan — Total Revenue (barres empilées Fixed + Variable)</div>
+</div>
+
+<ul>
+  <li><strong>Business Plan — Total Revenue</strong> — Barres empilées montrant le revenu annuel décomposé en Fixed (bleu) et Negotiated (jaune)</li>
+  <li><strong>Volume Split</strong> — Visualisation du split de volume entre prix fixe et prix négocié</li>
+  <li><strong>Price Comparison</strong> — Courbes comparant :
+    <ul>
+      <li>Market Ref (CFR N.Africa) — prix du marché</li>
+      <li>Weighted Avg Price — prix moyen pondéré effectif</li>
+      <li>Fixed Price — ligne horizontale du prix fixe</li>
+      <li>Negotiated Price — prix calculé par la formule variable</li>
+      <li>FOB NW Europe — l'indice utilisé dans le calcul</li>
+    </ul>
+  </li>
+  <li><strong>Sensitivity Table</strong> — Impact de différents splits de volume sur le prix moyen et le revenu</li>
+</ul>
+
+<h3>5.4 Perspective OCP (OCP Perspective)</h3>
+<p>Sélectionnez <strong>"OCP Perspective"</strong> pour voir l'analyse du point de vue d'OCP (acheteur) :</p>
+
+<div class="screenshot-placeholder">
+  <div class="icon">🏭</div>
+  <div>Screenshot : OCP Value Gain — barres montrant les économies OCP vs marché</div>
+</div>
+
+<ul>
+  <li><strong>OCP Custom Scenario Metrics</strong> — Coût moyen OCP, coût marché, gain de valeur, prix moyen payé</li>
+  <li><strong>OCP Value Gain</strong> — Graphe en barres montrant les économies (ou surcoûts) d'OCP par rapport aux prix du marché. Le graphe s'adapte automatiquement au scénario choisi :
+    <ul>
+      <li>Si <strong>100% Fixed</strong> → affiche uniquement la portion fixe (bleu)</li>
+      <li>Si <strong>70% Fixed + 30% Variable</strong> → affiche la portion fixe (bleu) empilée avec la portion variable (jaune)</li>
+      <li><strong>Valeur positive</strong> = OCP économise par rapport au marché</li>
+      <li><strong>Valeur négative</strong> = OCP paie plus cher que le marché</li>
+    </ul>
+  </li>
+  <li><strong>OCP Price Paid vs Market</strong> — Comparaison du prix payé par OCP dans chaque scénario vs le prix marché</li>
+  <li><strong>Cumulative Value Gain</strong> — Gain cumulé dans le temps pour chaque scénario</li>
+  <li><strong>Breakeven Analysis</strong> — Zone verte = zone d'économies OCP (prix contractuel &lt; marché)</li>
+  <li><strong>Scenario Comparison Summary</strong> — Tableau récapitulatif de tous les scénarios</li>
+</ul>
+
+<div class="warning">
+  <strong>⚠️ Important :</strong> Quand le prix du marché (CFR N.Africa) est supérieur au prix contractuel, OCP réalise des économies. Quand le contraire se produit, le contrat coûte plus cher que le marché.
+</div>
+
+
+<!-- 6. FORMULAS -->
+<h2 id="formulas">6. Formules de Calcul — Détails</h2>
+
+<h3>6.1 Formules du Contract Impact (Tab 3)</h3>
+
+<table>
+  <tr><th>Élément</th><th>Formule</th></tr>
+  <tr><td>Prix Fixe</td><td><code>P_fixe = Valeur fixe (ex: 110 $/t)</code></td></tr>
+  <tr><td>Prix Variable (Négocié)</td><td><code>P_var = A × FOB_NW_Europe + B</code></td></tr>
+  <tr><td>Prix Moyen Pondéré</td><td><code>P_avg = Vf% × P_fixe + (1-Vf%) × P_var</code></td></tr>
+  <tr><td>Revenu Total</td><td><code>Rev = Vol_fixe × P_fixe + Vol_var × P_var</code></td></tr>
+  <tr><td>Value Gain OCP</td><td><code>Gain = Vol_OCP × (P_marché - P_payé)</code></td></tr>
+</table>
+
+<h3>6.2 Formules de prix (Tab 2)</h3>
+
+<table>
+  <tr><th>ID</th><th>Formule</th></tr>
+  <tr><td>F1</td><td><code>P = a × (S_weighted × conv_ratio + prod_cost) + b</code></td></tr>
+  <tr><td>F2</td><td><code>P = a × (Smooth(S) × conv_ratio + prod_cost) + b</code></td></tr>
+  <tr><td>F3</td><td><code>P = a × ACS_weighted(m-1)</code></td></tr>
+  <tr><td>F4</td><td><code>P = ACS₀ × (a + b × S/S₀ + c × DAP/DAP₀)</code></td></tr>
+  <tr><td>F5</td><td><code>P = ACS₀ × (a + b × Sm(S)/S₀ + c × Sm(DAP)/DAP₀)</code></td></tr>
+  <tr><td>F6</td><td><code>P = ACS₀ × (a + b·S/S₀ + c·DAP/DAP₀ + d·PC/PC₀ + e·(1−CLK/CLK₀))</code></td></tr>
+</table>
+
+
+<!-- 7. GLOSSARY -->
+<h2 id="glossary">7. Glossaire</h2>
+
+<table>
+  <tr><th>Terme</th><th>Définition</th></tr>
+  <tr><td><strong>ACS</strong></td><td>Acide Sulfurique (Sulphuric Acid)</td></tr>
+  <tr><td><strong>CFR North Africa</strong></td><td>Prix marché ACS livré Afrique du Nord (Cost & Freight)</td></tr>
+  <tr><td><strong>FOB NW Europe</strong></td><td>Prix ACS FOB Nord-Ouest Europe — indice utilisé dans la formule variable</td></tr>
+  <tr><td><strong>OCP</strong></td><td>Office Chérifien des Phosphates — acheteur principal</td></tr>
+  <tr><td><strong>KT</strong></td><td>Kilo-tonnes (1 KT = 1,000 tonnes)</td></tr>
+  <tr><td><strong>$/t</strong></td><td>Dollars US par tonne</td></tr>
+  <tr><td><strong>$M</strong></td><td>Millions de dollars US</td></tr>
+  <tr><td><strong>Prix Fixe</strong></td><td>Prix contractuel fixe indépendant du marché</td></tr>
+  <tr><td><strong>Prix Variable</strong></td><td>Prix calculé via la formule A × FOB_NWE + B, indexé sur le marché</td></tr>
+  <tr><td><strong>Value Gain</strong></td><td>Économie d'OCP = (Prix Marché - Prix Payé) × Volume</td></tr>
+  <tr><td><strong>Breakeven</strong></td><td>Point où le prix contractuel = prix marché (ni gain ni perte)</td></tr>
+  <tr><td><strong>Monte Carlo</strong></td><td>Méthode de simulation statistique avec multiples scénarios aléatoires</td></tr>
+  <tr><td><strong>S&P</strong></td><td>S&P Global — source des données de prix annuelles</td></tr>
+  <tr><td><strong>DAP</strong></td><td>Diammonium Phosphate — engrais phosphaté, input dans certaines formules</td></tr>
+  <tr><td><strong>Soufre ME</strong></td><td>Soufre FOB Middle East — matière première clé</td></tr>
+</table>
+
+
+<!-- 8. FAQ -->
+<h2 id="faq">8. FAQ — Questions Fréquentes</h2>
+
+<div class="card">
+  <h4>Q : Pourquoi la ligne FOB NW Europe apparaît-elle dans le graphe Price Comparison ?</h4>
+  <p>Parce que c'est l'indice de référence utilisé dans le calcul du prix variable. La formule <code>A × FOB_NWE + B</code> utilise directement cette valeur. Cela permet de comprendre comment le marché européen influence le prix négocié.</p>
+</div>
+
+<div class="card">
+  <h4>Q : Que signifie un "Value Gain" négatif pour OCP ?</h4>
+  <p>Un gain négatif signifie que le prix marché est <strong>inférieur</strong> au prix contractuel. OCP aurait pu acheter moins cher sur le marché spot. Cela arrive quand le marché baisse en dessous du prix fixe.</p>
+</div>
+
+<div class="card">
+  <h4>Q : D'où viennent les données ?</h4>
+  <p>Les données de prix historiques et projections viennent du fichier Excel fourni par Anas, basé sur les <strong>données annuelles S&P</strong>. L'historique couvre 2022-2025, les projections vont jusqu'à 2037.</p>
+</div>
+
+<div class="card">
+  <h4>Q : Comment changer les paramètres du contrat ?</h4>
+  <p>Les sliders et champs de saisie dans la section "Parameters" de l'onglet 3 permettent de modifier tous les paramètres en temps réel. Les graphes et métriques se recalculent automatiquement.</p>
+</div>
+
+<div class="card">
+  <h4>Q : Puis-je simuler un scénario où OCP achète seulement 70% de la production ?</h4>
+  <p>Oui ! Utilisez le slider <strong>"OCP Purchase Volume %"</strong> et mettez-le à 70%. Les métriques et graphes dans la perspective OCP refléteront ce scénario.</p>
+</div>
+
+<div class="card">
+  <h4>Q : Pourquoi y a-t-il un seul graphe de Value Gain au lieu de 3 ?</h4>
+  <p>Le graphe affiche le scénario correspondant aux paramètres que vous avez choisis en haut. Si vous mettez 100% Fixed, il ne montre que les barres de la portion fixe. Si vous mettez 70/30, il empile les portions fixe et variable. Cela évite la confusion avec des scénarios non pertinents.</p>
+</div>
+
+<div class="card">
+  <h4>Q : Comment exporter les données ?</h4>
+  <p>Survolez un graphe Plotly → cliquez sur l'icône 📷 en haut à droite pour télécharger l'image. Pour les tableaux, vous pouvez copier-coller directement dans Excel.</p>
+</div>
+
+
+<div class="footer">
+  <p>ACS Pricing Decision Platform — Guide d'Utilisation v2.0</p>
+  <p>Préparé par Mohammed ELABRIDI | Février 2026</p>
+  <p style="margin-top: 8px;">Pour toute question technique, contactez Mohammed.</p>
+</div>
+
+</body>
+</html>

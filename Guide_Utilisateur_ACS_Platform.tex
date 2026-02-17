@@ -1,0 +1,681 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multicol}
+\usepackage{tikz}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{tocloft}
+
+\tcbuselibrary{skins,breakable}
+
+% ── Page geometry ─────────────────────────────────────────────────────────────
+\geometry{
+  top=2.8cm, bottom=2.5cm, left=2.5cm, right=2.5cm,
+  headheight=15pt
+}
+
+% ── Colours ───────────────────────────────────────────────────────────────────
+\definecolor{primary}{HTML}{1E3A5F}
+\definecolor{accent}{HTML}{2563EB}
+\definecolor{lightbg}{HTML}{F0F4FA}
+\definecolor{warningbg}{HTML}{FFF8E1}
+\definecolor{warningborder}{HTML}{F59E0B}
+\definecolor{tipbg}{HTML}{EBF5FF}
+\definecolor{tipborder}{HTML}{2563EB}
+\definecolor{darktext}{HTML}{1A2332}
+\definecolor{graytext}{HTML}{5A6A85}
+\definecolor{lightgray}{HTML}{E2E6ED}
+\definecolor{formulabg}{HTML}{F0F4FF}
+\definecolor{greenbg}{HTML}{ECFDF5}
+\definecolor{greenborder}{HTML}{10B981}
+
+% ── Hyperref setup ────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  citecolor=accent,
+  pdfauthor={Mohammed ELABRIDI},
+  pdftitle={Guide d'Utilisation -- ACS Pricing Decision Platform},
+  pdfsubject={User Guide},
+}
+
+% ── Header / Footer ──────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{graytext}ACS Pricing Decision Platform}
+\fancyhead[R]{\small\color{graytext}Guide d'Utilisation}
+\fancyfoot[C]{\small\color{graytext}\thepage}
+\fancyfoot[R]{\small\color{graytext}F\'evrier 2026}
+
+% ── Section styling ──────────────────────────────────────────────────────────
+\titleformat{\section}
+  {\Large\bfseries\color{primary}}
+  {\thesection.}{0.6em}{}
+  [\vspace{-0.3em}\textcolor{lightgray}{\rule{\textwidth}{0.8pt}}]
+
+\titleformat{\subsection}
+  {\large\bfseries\color{primary}}
+  {\thesubsection}{0.5em}{}
+
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{darktext}}
+  {\thesubsubsection}{0.5em}{}
+
+% ── TOC styling ───────────────────────────────────────────────────────────────
+\renewcommand{\cftsecfont}{\bfseries\color{primary}}
+\renewcommand{\cftsecpagefont}{\bfseries\color{primary}}
+\renewcommand{\cftsubsecfont}{\color{darktext}}
+\renewcommand{\cftsubsecpagefont}{\color{darktext}}
+
+% ── Custom boxes ──────────────────────────────────────────────────────────────
+\newtcolorbox{infobox}[1][]{
+  enhanced, breakable,
+  colback=tipbg, colframe=tipborder,
+  boxrule=0pt, leftrule=3.5pt,
+  arc=0pt, outer arc=0pt,
+  top=10pt, bottom=10pt, left=14pt, right=14pt,
+  fonttitle=\bfseries\color{accent},
+  title={#1},
+  coltitle=accent,
+  attach title to upper={\par\vspace{4pt}},
+}
+
+\newtcolorbox{warningbox}[1][]{
+  enhanced, breakable,
+  colback=warningbg, colframe=warningborder,
+  boxrule=0pt, leftrule=3.5pt,
+  arc=0pt, outer arc=0pt,
+  top=10pt, bottom=10pt, left=14pt, right=14pt,
+  fonttitle=\bfseries\color{warningborder},
+  title={#1},
+  coltitle=warningborder,
+  attach title to upper={\par\vspace{4pt}},
+}
+
+\newtcolorbox{formulabox}{
+  enhanced,
+  colback=formulabg, colframe=lightgray,
+  boxrule=0.5pt,
+  arc=6pt, outer arc=6pt,
+  top=12pt, bottom=12pt, left=16pt, right=16pt,
+}
+
+\newtcolorbox{examplebox}[1][]{
+  enhanced, breakable,
+  colback=greenbg, colframe=greenborder,
+  boxrule=0pt, leftrule=3.5pt,
+  arc=0pt, outer arc=0pt,
+  top=10pt, bottom=10pt, left=14pt, right=14pt,
+  fonttitle=\bfseries\color{greenborder},
+  title={#1},
+  coltitle=greenborder,
+  attach title to upper={\par\vspace{4pt}},
+}
+
+% ── Custom commands ───────────────────────────────────────────────────────────
+\newcommand{\param}[1]{\texttt{\color{accent}#1}}
+\newcommand{\menupath}[1]{\texttt{\small #1}}
+\newcommand{\keystroke}[1]{\fbox{\small\texttt{#1}}}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── COVER PAGE ────────────────────────────────────────────────────────────────
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  % Top bar
+  \fill[primary] (current page.north west) rectangle
+    ([yshift=-4cm]current page.north east);
+  % Accent line
+  \fill[accent] ([yshift=-4cm]current page.north west) rectangle
+    ([yshift=-4.15cm]current page.north east);
+\end{tikzpicture}
+
+\vspace*{1cm}
+
+\begin{center}
+  {\color{white}\fontsize{28}{34}\selectfont\bfseries ACS Pricing}\\[6pt]
+  {\color{white}\fontsize{28}{34}\selectfont\bfseries Decision Platform}
+\end{center}
+
+\vspace{3.5cm}
+
+\begin{center}
+  {\fontsize{22}{28}\selectfont\color{primary}\bfseries Guide d'Utilisation}\\[12pt]
+  {\large\color{graytext} Version 2.0 --- F\'evrier 2026}
+\end{center}
+
+\vspace{3cm}
+
+\begin{center}
+\begin{tabular}{rl}
+  \textcolor{graytext}{Auteur :} & Mohammed ELABRIDI \\[4pt]
+  \textcolor{graytext}{Projet :} & Simulateur de Pricing ACS --- Contrat OCP \\[4pt]
+  \textcolor{graytext}{Donn\'ees :} & S\&P Global --- Prix annuels ACS \\[4pt]
+  \textcolor{graytext}{Statut :} & Document op\'erationnel
+\end{tabular}
+\end{center}
+
+\vfill
+
+\begin{center}
+  \textcolor{lightgray}{\rule{0.6\textwidth}{0.4pt}}\\[8pt]
+  {\small\color{graytext} Document confidentiel --- Usage interne uniquement}
+\end{center}
+
+\newpage
+
+% ── TABLE OF CONTENTS ─────────────────────────────────────────────────────────
+\thispagestyle{fancy}
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 1 : INTRODUCTION
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Introduction}
+
+\subsection{Objectif du document}
+
+Ce guide d'utilisation a pour objectif de fournir une documentation compl\`ete et accessible de l'outil \textbf{ACS Pricing Decision Platform}. Il est destin\'e \`a toute personne amen\'ee \`a utiliser l'outil, qu'elle soit analyste, chef de projet ou d\'ecideur.
+
+Le document couvre l'ensemble des fonctionnalit\'es de l'outil, de la simulation de prix jusqu'\`a l'analyse d'impact contractuel, en passant par la comparaison de formules de pricing.
+
+\subsection{Pr\'esentation g\'en\'erale de l'outil}
+
+L'ACS Pricing Decision Platform est une application web interactive d\'evelopp\'ee avec Streamlit. Elle permet d'analyser et de simuler les prix de l'acide sulfurique (ACS) dans le cadre de n\'egociations de contrats \`a long terme avec OCP.
+
+L'outil s'articule autour de \textbf{trois modules compl\'ementaires} :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries\color{primary}}l X}
+\toprule
+Module & Description \\
+\midrule
+Monte Carlo Simulation & Projection des prix futurs avec intervalles de confiance, bas\'ee sur les donn\'ees historiques et les perspectives S\&P. \\[6pt]
+Formula Lab \& Decision & Comparaison de six formules de pricing avec le march\'e r\'eel. Backtesting historique, projection et aide \`a la d\'ecision. \\[6pt]
+Contract Impact Analysis & Analyse de revenus bas\'ee sur les volumes. Mod\'elisation de sc\'enarios d'achat OCP et quantification des gains de valeur. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Source des donn\'ees}
+
+\begin{infobox}[Source des donn\'ees]
+Les donn\'ees de prix historiques et les projections proviennent des \textbf{donn\'ees annuelles S\&P Global}, transmises via le fichier Excel fourni par l'\'equipe. L'indice de r\'ef\'erence march\'e est le prix \textbf{ACS CFR North Africa}. L'indice utilis\'e dans la formule variable est le \textbf{ACS FOB NW Europe}.
+\end{infobox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 2 : LANCEMENT
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Lancement de l'application}
+
+\subsection{Pr\'erequis}
+
+Avant de lancer l'outil, v\'erifiez que les \'el\'ements suivants sont install\'es sur votre machine :
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Python 3.9 ou sup\'erieur
+  \item Les d\'ependances du projet (install\'ees via \texttt{pip install -r requirements.txt})
+  \item Le fichier de donn\'ees Excel dans le m\^eme dossier que l'application
+\end{itemize}
+
+\subsection{Proc\'edure de lancement}
+
+\begin{enumerate}[leftmargin=1.5em, itemsep=6pt]
+  \item \textbf{Ouvrir un terminal} et naviguer vers le dossier du projet :
+    \begin{center}
+    \texttt{cd "\,domaine project\,"}
+    \end{center}
+
+  \item \textbf{Lancer l'application} avec la commande :
+    \begin{center}
+    \texttt{streamlit run app.py}
+    \end{center}
+
+  \item \textbf{Le navigateur s'ouvre automatiquement} \`a l'adresse \texttt{http://localhost:8501}.
+    Si ce n'est pas le cas, copiez l'adresse et collez-la manuellement dans votre navigateur.
+\end{enumerate}
+
+\begin{infobox}[Navigation]
+Les trois modules sont accessibles via les onglets situ\'es en haut de la page. Cliquez sur l'onglet souhait\'e pour basculer d'un module \`a l'autre. Les param\`etres de chaque module se trouvent soit dans la barre lat\'erale gauche (onglets 1 et 2), soit directement dans le corps de la page (onglet 3).
+\end{infobox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 3 : MONTE CARLO
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Module 1 --- Monte Carlo Simulation}
+
+\subsection{Principe}
+
+Ce module g\'en\`ere des \textbf{projections de prix} \`a moyen et long terme en utilisant la m\'ethode de Monte Carlo. Le principe est le suivant : \`a partir d'une tendance centrale (les perspectives S\&P) et d'une volatilit\'e calcul\'ee sur l'historique, l'outil simule des centaines de trajectoires de prix possibles. L'enveloppe de ces trajectoires donne un intervalle de confiance.
+
+\subsection{Param\`etres}
+
+Les param\`etres se trouvent dans la \textbf{barre lat\'erale gauche} et sont organis\'es en quatre blocs :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Param\`etre & Description \\
+\midrule
+Product & Variable \`a simuler. Par d\'efaut : \param{ACS CFR North Africa}. Autres options disponibles : ACS NW EU, ACS Japan, ACS China, Soufre ME, DAP, etc. \\[6pt]
+Horizon & P\'eriode de projection. D\'efinir une ann\'ee de d\'ebut (ex : 2025) et une ann\'ee de fin (ex : 2035). \\[6pt]
+S\&P Outlook & Perspectives de prix annuelles utilis\'ees comme tendance centrale. Possibilit\'e de modifier manuellement chaque ann\'ee en cochant la case ``Override S\&P values''. \\[6pt]
+Volatilit\'e & Par d\'efaut, la volatilit\'e est calcul\'ee automatiquement \`a partir de l'historique. Le multiplicateur permet de l'amplifier (valeur $>1$) ou de la r\'eduire (valeur $<1$). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Lecture des r\'esultats}
+
+\subsubsection{Graphe de projection}
+
+Le graphe principal affiche les \'el\'ements suivants :
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Ligne rouge pointill\'ee} --- Tendance centrale S\&P (perspectives annuelles).
+  \item \textbf{Bande bleue claire} --- Intervalle de confiance \`a 95\,\%, c'est-\`a-dire la zone dans laquelle le prix a 95\,\% de chances de se trouver selon le mod\`ele.
+  \item \textbf{Ligne bleue} --- Un sc\'enario Monte Carlo individuel, pour illustrer une trajectoire possible.
+  \item \textbf{Ligne violette} (en l\'egende) --- Moyenne de toutes les simulations Monte Carlo.
+\end{itemize}
+
+\subsubsection{M\'etriques cl\'es}
+
+En haut de la page, cinq indicateurs synth\'etisent les r\'esultats :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Indicateur & Signification \\
+\midrule
+S\&P Outlook & Prix moyen des perspectives S\&P sur la p\'eriode \\
+Simulated Mean & Prix moyen de toutes les simulations Monte Carlo \\
+95th Pctl Max & Valeur maximale atteinte par le 95\textsuperscript{e} percentile \\
+5th Pctl Min & Valeur minimale atteinte par le 5\textsuperscript{e} percentile \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Distribution}
+
+L'histogramme montre la distribution des prix simul\'es pour une ann\'ee donn\'ee. La ligne verticale jaune indique la moyenne. Plus la distribution est \'etroite, plus l'incertitude est faible.
+
+\begin{infobox}[Comment interpr\'eter]
+Si la bande bleue est large, cela traduit une \textbf{forte incertitude} sur les prix futurs. Si la moyenne simul\'ee est significativement au-dessus de la tendance S\&P, le mod\`ele sugg\`ere un risque de prix plus \'elev\'es que pr\'evu.
+\end{infobox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 4 : FORMULA LAB
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Module 2 --- Formula Lab \& Decision}
+
+\subsection{Principe}
+
+Ce module permet de comparer \textbf{six formules de pricing} avec les prix du march\'e r\'eel. Chaque formule utilise diff\'erents inputs (soufre, DAP, petcoke, clinker) pour calculer un prix th\'eorique. L'objectif est d'identifier la formule qui suit le mieux le march\'e, ou qui offre le meilleur positionnement strat\'egique.
+
+\subsection{Les six formules}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{c l X}
+\toprule
+ID & Nom & Description \\
+\midrule
+F1 & Sulfur Indexing Only & Indexation directe sur le soufre (ME + NA), avec co\^ut de production \\[4pt]
+F2 & Smooth Sulfur Indexing & Identique \`a F1 mais utilise une moyenne mobile liss\'ee du soufre \\[4pt]
+F3 & Last Month ACS Indexing & Prix ACS du mois pr\'ec\'edent avec pond\'eration r\'egionale \\[4pt]
+F4 & S \& DAP Variation & Variation du soufre et du DAP par rapport \`a une r\'ef\'erence \\[4pt]
+F5 & Smooth S \& DAP & Identique \`a F4 mais avec inputs liss\'es \\[4pt]
+F6 & Full Cost Stack & Soufre + DAP + petcoke + clinker --- formule la plus compl\`ete \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{D\'etail des formules}
+
+\begin{formulabox}
+\begin{align*}
+\text{F1 :}\quad & P = a \times (S_{\text{weighted}} \times r_{\text{conv}} + C_{\text{prod}}) + b \\[6pt]
+\text{F2 :}\quad & P = a \times (\overline{S}_{\text{smooth}} \times r_{\text{conv}} + C_{\text{prod}}) + b \\[6pt]
+\text{F3 :}\quad & P = a \times \text{ACS}_{\text{weighted}}(m-1) \\[6pt]
+\text{F4 :}\quad & P = \text{ACS}_0 \times \left(a + b \cdot \frac{S}{S_0} + c \cdot \frac{\text{DAP}}{\text{DAP}_0}\right) \\[6pt]
+\text{F5 :}\quad & P = \text{ACS}_0 \times \left(a + b \cdot \frac{\overline{S}}{S_0} + c \cdot \frac{\overline{\text{DAP}}}{\text{DAP}_0}\right) \\[6pt]
+\text{F6 :}\quad & P = \text{ACS}_0 \times \left(a + b \cdot \frac{S}{S_0} + c \cdot \frac{\text{DAP}}{\text{DAP}_0} + d \cdot \frac{\text{PC}}{\text{PC}_0} + e \cdot \left(1 - \frac{\text{CLK}}{\text{CLK}_0}\right)\right)
+\end{align*}
+\end{formulabox}
+
+\subsection{Param\`etres}
+
+Chaque formule dispose de param\`etres ajustables dans la barre lat\'erale :
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Coefficient \textit{a}} --- Pond\'eration principale de la formule.
+  \item \textbf{Floor} --- Prix plancher. Le prix calcul\'e ne descendra pas en dessous de cette valeur.
+  \item \textbf{Cap} --- Prix plafond. Le prix calcul\'e ne d\'epassera pas cette valeur.
+  \item \textbf{Param\`etres sp\'ecifiques} --- Chaque formule peut avoir des coefficients additionnels (\textit{b}, \textit{c}, \textit{d}, \textit{e}) selon sa complexit\'e.
+\end{itemize}
+
+\subsection{Lecture des r\'esultats}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Backtest} --- Comparaison de la formule avec les prix r\'eels sur l'historique (2022--2025). Permet de v\'erifier si la formule aurait bien suivi le march\'e.
+  \item \textbf{Forward} --- Projection de la formule sur la p\'eriode future (2025--2035), en utilisant les perspectives S\&P comme inputs.
+  \item \textbf{M\'etriques de performance} --- RMSE (erreur quadratique moyenne), tracking error, distance moyenne au march\'e, pourcentage du temps au-dessus ou en dessous du march\'e.
+  \item \textbf{Decision Matrix} --- Tableau comparatif de toutes les formules pour faciliter la prise de d\'ecision.
+\end{itemize}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 5 : CONTRACT IMPACT ANALYSIS
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Module 3 --- Contract Impact Analysis}
+
+\subsection{Principe}
+
+Ce module est le c\oe ur de l'analyse contractuelle. Il mod\'elise les revenus du projet en fonction des volumes et du m\'ecanisme de pricing (prix fixe et prix variable), puis \'evalue l'impact pour OCP en tant qu'acheteur.
+
+L'analyse est organis\'ee autour de \textbf{deux perspectives} :
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Project Perspective} --- Point de vue du vendeur. Combien le projet g\'en\`ere-t-il de revenus ?
+  \item \textbf{OCP Perspective} --- Point de vue de l'acheteur. Combien OCP \'economise-t-il par rapport au march\'e ?
+\end{itemize}
+
+\subsection{Param\`etres}
+
+Les param\`etres sont affich\'es directement dans le corps de la page, organis\'es en trois colonnes :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}l c X}
+\toprule
+Param\`etre & D\'efaut & Description \\
+\midrule
+Total Production Volume & 750 KT & Capacit\'e de production annuelle, en kilo-tonnes. \\[4pt]
+Fixed Price & 110 \$/t & Prix fixe contractuel, ind\'ependant du march\'e. \\[4pt]
+Fixed Price Volume \% & 70\,\% & Part de la production vendue au prix fixe. \\[4pt]
+OCP Purchase Volume \% & 100\,\% & Part de la production totale achet\'ee par OCP. \\[4pt]
+Coefficient A & 1.0 & Multiplicateur de l'indice FOB NW Europe dans la formule variable. \\[4pt]
+Premium / Discount B & 0 \$/t & Prime (positif) ou remise (n\'egatif) ajout\'ee \`a la formule variable. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Formules de calcul}
+
+Le m\'ecanisme de pricing repose sur deux composantes : un prix fixe et un prix variable. L'outil affiche ces formules de mani\`ere visible en haut de la page pour faciliter la compr\'ehension.
+
+\begin{formulabox}
+\textbf{Prix Fixe :}
+\[
+P_{\text{fixe}} = \text{Valeur contractuelle fixe} \quad (\text{ex : } 110\;\$/\text{t})
+\]
+
+\textbf{Prix Variable (n\'egoci\'e) :}
+\[
+P_{\text{var}} = A \times \text{FOB}_{\text{NW Europe}} + B
+\]
+
+\textbf{Prix Moyen Pond\'er\'e :}
+\[
+P_{\text{avg}} = V_f \times P_{\text{fixe}} + (1 - V_f) \times P_{\text{var}}
+\]
+
+o\`u $V_f$ repr\'esente la fraction du volume au prix fixe (ex : 0.70 pour 70\,\%).
+\end{formulabox}
+
+\begin{examplebox}[Exemple de calcul]
+Avec les param\`etres par d\'efaut : Fixed Price = 110\,\$/t, $A = 1.0$, $B = 0$, FOB NW Europe = 95\,\$/t, et un split 70/30 :
+
+\begin{align*}
+P_{\text{var}} &= 1.0 \times 95 + 0 = 95\;\$/\text{t} \\[4pt]
+P_{\text{avg}} &= 0.70 \times 110 + 0.30 \times 95 = 105.5\;\$/\text{t} \\[4pt]
+\text{Revenu annuel} &= 525 \times 110 + 225 \times 95 = 57\,750 + 21\,375 = 79.1\;\text{M\$}
+\end{align*}
+\end{examplebox}
+
+\subsection{Project Perspective}
+
+Cette vue analyse les r\'esultats du point de vue du vendeur ou du projet.
+
+\subsubsection{M\'etriques cl\'es}
+
+Cinq indicateurs sont affich\'es en haut de la page :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Indicateur & Signification \\
+\midrule
+Avg Revenue & Revenu annuel moyen du projet, en millions de dollars. \\
+Weighted Avg Price & Prix moyen pond\'er\'e effectif (fixe + variable). \\
+Market Ref Price & Prix moyen du march\'e (ACS CFR North Africa). \\
+Negotiated Price & Prix moyen calcul\'e par la formule variable. \\
+vs Market & \'Ecart en pourcentage entre le prix pond\'er\'e et le march\'e. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Graphiques}
+
+\begin{description}[leftmargin=1.5em, style=nextline]
+  \item[\normalfont\textbf{Business Plan --- Total Revenue}]
+  Graphe en barres empil\'ees montrant le revenu annuel d\'ecompos\'e en \textit{Fixed} (bleu) et \textit{Negotiated} (jaune). Permet de visualiser la contribution de chaque composante au revenu total.
+
+  \item[\normalfont\textbf{Volume Split}]
+  Repr\'esentation visuelle du partage des volumes entre prix fixe et prix n\'egoci\'e. La barre affiche les volumes en kilo-tonnes avec le total annot\'e.
+
+  \item[\normalfont\textbf{Price Comparison}]
+  Graphe en courbes comparant sur la p\'eriode :
+  \begin{itemize}[leftmargin=1.2em]
+    \item Le prix march\'e de r\'ef\'erence (ACS CFR North Africa), en noir.
+    \item Le prix moyen pond\'er\'e, en jaune.
+    \item Le prix fixe, en bleu pointill\'e (ligne horizontale).
+    \item Le prix n\'egoci\'e, en rouge pointill\'e.
+    \item L'indice FOB NW Europe, en violet. C'est l'indice qui entre directement dans la formule variable : il permet de comprendre d'o\`u vient le prix n\'egoci\'e.
+  \end{itemize}
+
+  \item[\normalfont\textbf{Sensitivity Table}]
+  Tableau montrant l'impact de diff\'erents splits de volume (50/50, 60/40, \ldots, 100/0) sur le prix moyen et le revenu annuel. Utile pour explorer des configurations alternatives.
+\end{description}
+
+\subsection{OCP Perspective}
+
+Cette vue analyse les r\'esultats du point de vue d'OCP en tant qu'acheteur.
+
+\subsubsection{M\'etriques cl\'es}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Indicateur & Signification \\
+\midrule
+OCP Avg Cost & Co\^ut moyen annuel pour OCP, en millions de dollars. \\
+Market Cost & Ce que co\^uterait le m\^eme volume aux prix du march\'e. \\
+Avg Value Gain & \'Economie moyenne annuelle d'OCP par rapport au march\'e. Positif = \'economie. \\
+Avg Price Paid & Prix moyen par tonne effectivement pay\'e par OCP. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Graphiques}
+
+\begin{description}[leftmargin=1.5em, style=nextline]
+  \item[\normalfont\textbf{OCP Value Gain}]
+  Graphe en barres montrant les \'economies (ou surco\^uts) d'OCP par rapport aux prix du march\'e, ann\'ee par ann\'ee.
+
+  Le graphe \textbf{s'adapte automatiquement} au sc\'enario choisi via les param\`etres :
+  \begin{itemize}[leftmargin=1.2em]
+    \item Si le sc\'enario est 100\,\% fixe, seule la portion fixe (barres bleues) est affich\'ee.
+    \item Si le sc\'enario comprend une partie variable (par exemple 70/30), les barres bleues (portion fixe) sont empil\'ees avec les barres jaunes (portion variable).
+    \item Une valeur positive signifie qu'OCP \'economise par rapport au march\'e.
+    \item Une valeur n\'egative signifie qu'OCP paie plus cher que le march\'e.
+  \end{itemize}
+
+  \item[\normalfont\textbf{OCP Price Paid vs Market}]
+  Courbes comparant le prix pay\'e par OCP dans chaque sc\'enario pr\'ed\'efini avec le prix du march\'e. Permet de situer chaque configuration par rapport \`a la r\'ef\'erence.
+
+  \item[\normalfont\textbf{Cumulative Value Gain}]
+  Graphe montrant le gain cumul\'e dans le temps pour chaque sc\'enario. La pente de la courbe indique la vitesse \`a laquelle OCP accumule des \'economies (ou des surco\^uts).
+
+  \item[\normalfont\textbf{Breakeven Analysis}]
+  Graphe superposant le prix du march\'e et le prix contractuel mix\'e. La \textbf{zone verte} repr\'esente les p\'eriodes o\`u le contrat est plus avantageux que le march\'e pour OCP.
+
+  \item[\normalfont\textbf{Scenario Comparison Summary}]
+  Tableau r\'ecapitulatif comparant les trois sc\'enarios pr\'ed\'efinis : volume moyen, co\^ut moyen, co\^ut march\'e, gain de valeur moyen et gain total cumul\'e.
+\end{description}
+
+\begin{warningbox}[Point d'attention]
+Le \textit{Value Gain} d\'epend directement de l'\'ecart entre le prix du march\'e et le prix contractuel. Quand le march\'e est \'elev\'e, le contrat \`a prix fixe est avantageux pour OCP. Quand le march\'e baisse en dessous du prix fixe, le contrat devient moins int\'eressant.
+\end{warningbox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 6 : INTERACTIONS
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Interactions et fonctionnalit\'es communes}
+
+\subsection{Recalcul en temps r\'eel}
+
+Tous les param\`etres sont interactifs. D\`es qu'une valeur est modifi\'ee --- slider, champ num\'erique, case \`a cocher --- l'ensemble des graphiques et m\'etriques se recalcule automatiquement. Il n'y a pas de bouton ``Valider'' \`a cliquer.
+
+\subsection{Filtrage temporel}
+
+Dans le module Contract Impact Analysis, un slider \param{Year Range} permet de restreindre l'analyse \`a une sous-p\'eriode. Par exemple, on peut se concentrer sur la p\'eriode 2026--2032 pour analyser les premi\`eres ann\'ees du contrat.
+
+\subsection{Export des graphiques}
+
+Chaque graphique Plotly dispose d'une barre d'outils accessible en survolant le graphe avec la souris. Les actions disponibles sont :
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{T\'el\'echarger en image} --- Cliquer sur l'ic\^one appareil photo pour sauvegarder le graphe en PNG.
+  \item \textbf{Zoom} --- S\'electionner une zone pour zoomer. Double-cliquer pour r\'einitialiser.
+  \item \textbf{Survol} --- Passer la souris sur les courbes ou barres pour afficher les valeurs exactes.
+\end{itemize}
+
+\subsection{Export des tableaux}
+
+Les tableaux de donn\'ees peuvent \^etre copi\'es manuellement (s\'election puis \keystroke{Cmd+C}) et coll\'es dans un tableur. Les donn\'ees d\'etaill\'ees sont accessibles via les sections d\'epliantes (``Detailed Data'').
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 7 : GLOSSAIRE
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Glossaire}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Terme & D\'efinition \\
+\midrule
+ACS & Acide sulfurique (\textit{Sulphuric Acid}). \\[3pt]
+CFR North Africa & Prix march\'e ACS livr\'e Afrique du Nord (\textit{Cost \& Freight}). R\'ef\'erence march\'e principale. \\[3pt]
+FOB NW Europe & Prix ACS franco \`a bord, Nord-Ouest de l'Europe. Indice utilis\'e dans la formule de prix variable. \\[3pt]
+OCP & Office Ch\'erifien des Phosphates. Acheteur principal dans les sc\'enarios mod\'elis\'es. \\[3pt]
+KT & Kilo-tonne, soit 1\,000 tonnes. \\[3pt]
+\$/t & Dollars am\'ericains par tonne. \\[3pt]
+\$M & Millions de dollars am\'ericains. \\[3pt]
+Prix Fixe & Prix contractuel invariable, ind\'ependant des fluctuations du march\'e. \\[3pt]
+Prix Variable & Prix calcul\'e par la formule $A \times \text{FOB}_{\text{NWE}} + B$, index\'e sur le march\'e europ\'een. \\[3pt]
+Value Gain & \'Economie r\'ealis\'ee par OCP, \'egale \`a $(P_{\text{march\'e}} - P_{\text{pay\'e}}) \times \text{Volume}$. \\[3pt]
+Breakeven & Point d'\'equilibre o\`u le prix contractuel \'egale le prix march\'e. \\[3pt]
+Monte Carlo & M\'ethode de simulation statistique g\'en\'erant de multiples sc\'enarios al\'eatoires. \\[3pt]
+S\&P & S\&P Global Commodity Insights. Source des donn\'ees de prix annuelles. \\[3pt]
+DAP & Phosphate di-ammonique (\textit{Diammonium Phosphate}). Engrais phosphat\'e. \\[3pt]
+Soufre ME & Soufre FOB Middle East. Mati\`ere premi\`ere cl\'e dans les formules F1 \`a F6. \\[3pt]
+RMSE & Racine de l'erreur quadratique moyenne (\textit{Root Mean Square Error}). \\[3pt]
+Tracking Error & \'Ecart-type des diff\'erences entre la formule et le march\'e. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 8 : FAQ
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Questions fr\'equentes}
+
+\begin{description}[leftmargin=0em, style=nextline, font=\normalfont\bfseries\color{primary}]
+
+\item[Pourquoi la ligne FOB NW Europe appara\^it-elle dans le graphe Price Comparison ?]
+Parce que c'est l'indice de r\'ef\'erence utilis\'e dans le calcul du prix variable. La formule $P_{\text{var}} = A \times \text{FOB}_{\text{NWE}} + B$ utilise directement cette valeur. Afficher cet indice permet de comprendre comment le march\'e europ\'een influence le prix n\'egoci\'e.
+
+\item[Que signifie un Value Gain n\'egatif pour OCP ?]
+Un gain n\'egatif signifie que le prix march\'e est inf\'erieur au prix contractuel. En d'autres termes, OCP aurait pu acheter moins cher sur le march\'e spot. Cela se produit lorsque le march\'e baisse en dessous du prix fixe.
+
+\item[D'o\`u viennent les donn\'ees ?]
+Les donn\'ees de prix historiques (2022--2025) et les projections (jusqu'\`a 2037) proviennent du fichier Excel pr\'epar\'e par l'\'equipe, bas\'e sur les donn\'ees annuelles S\&P Global.
+
+\item[Comment changer les param\`etres du contrat ?]
+Les sliders et champs de saisie dans la section ``Parameters'' de l'onglet 3 permettent de modifier tous les param\`etres en temps r\'eel. Les graphes et m\'etriques se recalculent automatiquement, sans action suppl\'ementaire.
+
+\item[Puis-je simuler un sc\'enario o\`u OCP ach\`ete seulement une partie de la production ?]
+Oui. Le slider \param{OCP Purchase Volume \%} permet de d\'efinir la part de la production achet\'ee par OCP. Par exemple, le mettre \`a 70\,\% simulera un sc\'enario o\`u OCP ach\`ete 525\,KT sur 750\,KT.
+
+\item[Pourquoi le graphe OCP Value Gain ne montre-t-il qu'un seul sc\'enario ?]
+Le graphe affiche le sc\'enario correspondant aux param\`etres que l'utilisateur a choisis. Si le split est 100\,\% fixe, seule la portion fixe appara\^it. Si le split est 70/30, la portion fixe et la portion variable sont empil\'ees. Cela \'evite toute confusion avec des sc\'enarios non pertinents. Les trois sc\'enarios pr\'ed\'efinis restent accessibles dans le tableau ``Scenario Comparison Summary'' en bas de page.
+
+\item[Comment exporter un graphique ?]
+En survolant un graphique avec la souris, une barre d'outils appara\^it en haut \`a droite. Cliquer sur l'ic\^one en forme d'appareil photo permet de t\'el\'echarger l'image au format PNG. Pour les tableaux, il est possible de s\'electionner les donn\'ees et de les copier-coller dans Excel.
+
+\item[L'outil n\'ecessite-t-il une connexion internet ?]
+Non. L'ensemble de l'outil fonctionne en local. Les donn\'ees sont lues depuis le fichier Excel pr\'esent dans le dossier du projet.
+
+\end{description}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+% SECTION 9 : SUPPORT
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Support et contact}
+
+Pour toute question technique, demande d'\'evolution ou signalement de bug, contactez :
+
+\begin{center}
+\begin{tabular}{rl}
+  \textbf{Nom :} & Mohammed ELABRIDI \\
+  \textbf{R\^ole :} & D\'eveloppeur de l'outil \\
+\end{tabular}
+\end{center}
+
+\vfill
+
+\begin{center}
+\textcolor{lightgray}{\rule{0.5\textwidth}{0.4pt}}\\[8pt]
+{\small\color{graytext} ACS Pricing Decision Platform --- Guide d'Utilisation v2.0}\\[3pt]
+{\small\color{graytext} Document confidentiel --- Usage interne uniquement}\\[3pt]
+{\small\color{graytext} F\'evrier 2026}
+\end{center}
+
+\end{document}

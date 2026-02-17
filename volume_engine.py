@@ -11,11 +11,11 @@ from pathlib import Path
 
 def load_price_time_series(xlsx_path: str) -> pd.DataFrame:
     """
-    Load ACS CFR North Africa (market reference) and FOB India/Indonesia proxy
+    Load ACS CFR North Africa (market reference) and ACS FOB NW Europe
     from Historical + Generated data sheets.
 
     Returns DataFrame with columns:
-        Year, Month, ACS_CFR_NAfrica, FOB_IO (FOB India/Indonesia proxy),
+        Year, Month, ACS_CFR_NAfrica, ACS_FOB_NWE (FOB NW Europe),
         S_FOB_ME (Sulphur FOB Middle East)
     """
     xl = pd.ExcelFile(xlsx_path)
@@ -36,12 +36,11 @@ def load_price_time_series(xlsx_path: str) -> pd.DataFrame:
             hist['ACS_CFR_NAfrica'] = pd.to_numeric(dfm[col], errors='coerce')
             break
 
-    # FOB India/Indonesia proxy: use ACS FOB Japan as closest available index
-    # (the Excel has Japan/South Korea FOB, which is the Indian Ocean reference)
+    # ACS FOB NW Europe — index used in the variable price formula
     for col in dfm.columns:
         cstr = str(col).lower()
-        if 'japan' in cstr or 'acs japan' in cstr:
-            hist['FOB_IO'] = pd.to_numeric(dfm[col], errors='coerce')
+        if 'nw eu' in cstr or 'europe' in cstr:
+            hist['ACS_FOB_NWE'] = pd.to_numeric(dfm[col], errors='coerce')
             break
 
     # Sulphur FOB ME as another reference
@@ -49,13 +48,6 @@ def load_price_time_series(xlsx_path: str) -> pd.DataFrame:
         cstr = str(col).lower()
         if 's me' in cstr or 'sulfur me' in cstr or 'sulphur' in cstr and 'me' in cstr:
             hist['S_FOB_ME'] = pd.to_numeric(dfm[col], errors='coerce')
-            break
-
-    # ACS FOB NW Europe
-    for col in dfm.columns:
-        cstr = str(col).lower()
-        if 'nw eu' in cstr or 'europe' in cstr:
-            hist['ACS_FOB_NWE'] = pd.to_numeric(dfm[col], errors='coerce')
             break
 
     hist = hist[hist['Year'] <= 2025].copy()
@@ -80,15 +72,12 @@ def load_price_time_series(xlsx_path: str) -> pd.DataFrame:
             for _, row in dfg.iterrows():
                 yr = int(row['Year'])
                 acs = None
-                fob_io = None
                 s_me = None
                 acs_nwe = None
                 for c in dfg.columns:
                     cs = str(c)
                     if 'ACS CFR North Africa' in cs:
                         acs = pd.to_numeric(row[c], errors='coerce')
-                    if 'ACS Japan' in cs or 'Japan' in cs:
-                        fob_io = pd.to_numeric(row[c], errors='coerce')
                     if 'S ME' in cs:
                         s_me = pd.to_numeric(row[c], errors='coerce')
                     if 'ACS NW EU' in cs or 'NW EU' in cs:
@@ -99,9 +88,8 @@ def load_price_time_series(xlsx_path: str) -> pd.DataFrame:
                         'Year': yr,
                         'Month': m,
                         'ACS_CFR_NAfrica': acs,
-                        'FOB_IO': fob_io,
-                        'S_FOB_ME': s_me,
                         'ACS_FOB_NWE': acs_nwe,
+                        'S_FOB_ME': s_me,
                     })
             if rows:
                 proj = pd.DataFrame(rows)
@@ -109,9 +97,9 @@ def load_price_time_series(xlsx_path: str) -> pd.DataFrame:
     except Exception:
         pass
 
-    # Ensure FOB_IO exists; fallback to ACS_CFR_NAfrica * 0.85
-    if 'FOB_IO' not in hist.columns or hist['FOB_IO'].isna().all():
-        hist['FOB_IO'] = hist.get('ACS_CFR_NAfrica', 120) * 0.85
+    # Ensure ACS_FOB_NWE exists; fallback to ACS_CFR_NAfrica * 0.85
+    if 'ACS_FOB_NWE' not in hist.columns or hist['ACS_FOB_NWE'].isna().all():
+        hist['ACS_FOB_NWE'] = hist.get('ACS_CFR_NAfrica', 120) * 0.85
 
     hist = hist.sort_values(['Year', 'Month']).reset_index(drop=True)
     return hist
@@ -127,10 +115,10 @@ def compute_yearly_averages(ts: pd.DataFrame) -> pd.DataFrame:
     return yearly
 
 
-def compute_negotiated_price(fob_io: float, coeff_a: float = 1.0,
+def compute_negotiated_price(fob_nwe: float, coeff_a: float = 1.0,
                              premium_b: float = 0.0) -> float:
-    """Negotiated price = A * FOB_IO + B"""
-    return coeff_a * fob_io + premium_b
+    """Negotiated price = A * FOB_NWE + B"""
+    return coeff_a * fob_nwe + premium_b
 
 
 def compute_weighted_avg_price(fixed_price: float, negotiated_price: float,
@@ -153,7 +141,7 @@ def build_project_revenue_table(yearly: pd.DataFrame,
     Build project revenue table (assumes 100% of production sold).
 
     Returns DataFrame with:
-        Year, ACS_CFR_NAfrica, FOB_IO, Negotiated_Price, Weighted_Avg_Price,
+        Year, ACS_CFR_NAfrica, ACS_FOB_NWE, Negotiated_Price, Weighted_Avg_Price,
         Revenue_M (millions $), Vol_Fixed_KT, Vol_Var_KT
     """
     var_pct = 1.0 - fixed_pct
@@ -162,9 +150,9 @@ def build_project_revenue_table(yearly: pd.DataFrame,
 
     result = yearly[['Year']].copy()
     result['ACS_CFR_NAfrica'] = yearly.get('ACS_CFR_NAfrica', 120.0)
-    result['FOB_IO'] = yearly.get('FOB_IO', 100.0)
+    result['ACS_FOB_NWE'] = yearly.get('ACS_FOB_NWE', 100.0)
     result['Fixed_Price'] = fixed_price
-    result['Negotiated_Price'] = result['FOB_IO'].apply(
+    result['Negotiated_Price'] = result['ACS_FOB_NWE'].apply(
         lambda x: compute_negotiated_price(x, coeff_a, premium_b)
     )
     result['Weighted_Avg_Price'] = result.apply(
@@ -197,8 +185,8 @@ def build_ocp_scenarios(yearly: pd.DataFrame,
         Gain_Fixed_M, Gain_Var_M
     """
     market_price = yearly.get('ACS_CFR_NAfrica', pd.Series([120.0]))
-    fob_io = yearly.get('FOB_IO', pd.Series([100.0]))
-    neg_price = fob_io.apply(lambda x: compute_negotiated_price(x, coeff_a, premium_b))
+    fob_nwe = yearly.get('ACS_FOB_NWE', pd.Series([100.0]))
+    neg_price = fob_nwe.apply(lambda x: compute_negotiated_price(x, coeff_a, premium_b))
 
     scenarios = {}
 
@@ -259,8 +247,8 @@ def build_custom_ocp_scenario(yearly: pd.DataFrame,
     fixed_pct: fraction of OCP's purchase at fixed price (0-1)
     """
     market_price = yearly.get('ACS_CFR_NAfrica', pd.Series([120.0]))
-    fob_io = yearly.get('FOB_IO', pd.Series([100.0]))
-    neg_price = fob_io.apply(lambda x: compute_negotiated_price(x, coeff_a, premium_b))
+    fob_nwe = yearly.get('ACS_FOB_NWE', pd.Series([100.0]))
+    neg_price = fob_nwe.apply(lambda x: compute_negotiated_price(x, coeff_a, premium_b))
 
     ocp_vol = total_vol_kt * ocp_pct
     vol_fixed = ocp_vol * fixed_pct
@@ -285,12 +273,12 @@ def build_custom_ocp_scenario(yearly: pd.DataFrame,
 
 def compute_breakeven_price(fixed_price: float, fixed_pct: float,
                             coeff_a: float, premium_b: float,
-                            fob_io: float) -> float:
+                            fob_nwe: float) -> float:
     """
     Compute the market price at which OCP's blended price equals market.
     i.e., the breakeven ACS CFR North Africa price.
     """
-    neg = compute_negotiated_price(fob_io, coeff_a, premium_b)
+    neg = compute_negotiated_price(fob_nwe, coeff_a, premium_b)
     return fixed_pct * fixed_price + (1.0 - fixed_pct) * neg
 
 
