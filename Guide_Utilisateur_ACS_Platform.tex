@@ -3,7 +3,7 @@
 % ── Packages ──────────────────────────────────────────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[french]{babel}
+\usepackage[english]{babel}
 \usepackage{geometry}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -56,7 +56,7 @@
   linkcolor=accent,
   urlcolor=accent,
   citecolor=accent,
-  pdftitle={Guide Utilisateur -- ACS Pricing Decision Platform},
+  pdftitle={User Guide -- ACS Pricing Decision Platform},
   pdfsubject={User Guide},
 }
 
@@ -65,7 +65,7 @@
 \fancyhf{}
 \renewcommand{\headrulewidth}{0.4pt}
 \fancyhead[L]{\small\color{graytext}ACS Pricing Decision Platform}
-\fancyhead[R]{\small\color{graytext}Guide Utilisateur}
+\fancyhead[R]{\small\color{graytext}User Guide}
 \fancyfoot[C]{\small\color{graytext}\thepage}
 
 % ── Section styling ──────────────────────────────────────────────────────────
@@ -142,7 +142,7 @@
         \vspace{1.8cm}
         \centering
         {\large\color{graytext}\textit{#1}}\\[8pt]
-        {\footnotesize\color{graytext}Ins\'erer capture d'\'ecran ici}
+        {\footnotesize\color{graytext}Insert screenshot here}
         \vspace{1.8cm}
       }%
     }
@@ -178,17 +178,15 @@
 \vspace{3.5cm}
 
 \begin{center}
-  {\fontsize{22}{28}\selectfont\color{primary}\bfseries Guide Utilisateur}\\[12pt]
-  {\large\color{graytext} Version 2.0}
+  {\fontsize{22}{28}\selectfont\color{primary}\bfseries User Guide}
 \end{center}
 
 \vspace{3cm}
 
 \begin{center}
 \begin{tabular}{rl}
-  \textcolor{graytext}{Projet :} & Simulateur de Pricing ACS --- Contrat OCP \\[4pt]
-  \textcolor{graytext}{Donn\'ees :} & S\&P Global --- Prix annuels ACS \\[4pt]
-  \textcolor{graytext}{Statut :} & Document op\'erationnel
+  \textcolor{graytext}{Project:} & ACS Pricing Simulator  \\[4pt]
+  \textcolor{graytext}{Status:} & Operational document
 \end{tabular}
 \end{center}
 
@@ -196,7 +194,7 @@
 
 \begin{center}
   \textcolor{lightgray}{\rule{0.6\textwidth}{0.4pt}}\\[8pt]
-  {\small\color{graytext} Document confidentiel --- Usage interne uniquement}
+  {\small\color{graytext} Confidential document --- Internal use only}
 \end{center}
 
 \newpage
@@ -211,9 +209,9 @@
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Introduction}
 
-L'ACS Pricing Decision Platform est un outil interactif d'analyse et de simulation des prix de l'acide sulfurique (ACS) pour les n\'egociations de contrats avec OCP.
+The ACS Pricing Decision Platform is an interactive analysis and simulation tool for sulfuric acid (ACS) pricing, designed for contract negotiations with OCP.
 
-L'outil comprend \textbf{trois modules} :
+The tool comprises \textbf{three modules}:
 
 \begin{table}[H]
 \centering
@@ -221,22 +219,17 @@ L'outil comprend \textbf{trois modules} :
 \toprule
 Module & Description \\
 \midrule
-Monte Carlo Simulation & Projection des prix futurs avec intervalles de confiance et sc\'enarios de spikes. \\[6pt]
-Formula Lab \& Decision & Backtest d'une formule contre le march\'e r\'eel, puis test de la formule sur les sc\'enarios Monte Carlo. \\[6pt]
-Contract Impact Analysis & Analyse de revenus par volumes, sc\'enarios OCP (70--100\,\%), inflation. \\
+Monte Carlo Simulation & Future price projections with confidence intervals and spike scenarios. \\[6pt]
+Formula Lab \& Decision & Backtest a formula against the real market, then test the formula on Monte Carlo scenarios. \\[6pt]
+Contract Impact Analysis & Revenue analysis by volumes, OCP scenarios (70--100\,\%), inflation. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\begin{infobox}[Source des donn\'ees]
-Les prix historiques et projections proviennent des \textbf{donn\'ees annuelles S\&P Global}. R\'ef\'erence march\'e : \textbf{ACS CFR North Africa}. Indice variable : \textbf{ACS FOB NW Europe}.
+\begin{infobox}[Data Source]
+Historical prices and projections come from \textbf{S\&P Global annual data}. Market reference: \textbf{ACS CFR North Africa}. Variable index: \textbf{ACS FOB NW Europe}.
 \end{infobox}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{01_mc_sidebar.png}
-  \caption{Vue g\'en\'erale de la plateforme avec la barre lat\'erale et les onglets.}
-\end{figure}
 
 
 % ══════════════════════════════════════════════════════════════════════════════
@@ -244,30 +237,30 @@ Les prix historiques et projections proviennent des \textbf{donn\'ees annuelles 
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Monte Carlo Simulation}
 
-Ce module g\'en\`ere des projections de prix par \textbf{simulation Monte Carlo} : \`a partir d'une tendance S\&P et d'une volatilit\'e historique, des centaines de trajectoires possibles sont simul\'ees, avec possibilit\'e d'ajouter des spikes de prix.
+This module generates price projections through \textbf{Monte Carlo simulation}: from an S\&P trend and historical volatility, hundreds of possible trajectories are simulated, with the option to add price spikes.
 
-\subsection{Param\`etres}
+\subsection{Parameters}
 
-Tous les param\`etres se trouvent dans la \textbf{barre lat\'erale gauche}.
+All parameters are located in the \textbf{left sidebar}.
 
 \begin{table}[H]
 \centering\small
 \begin{tabularx}{\textwidth}{>{\bfseries}l X}
 \toprule
-Param\`etre & Description \\
+Parameter & Description \\
 \midrule
-Product & Variable \`a simuler (ACS CFR North Africa, ACS NW EU, S ME, DAP, etc.) \\[3pt]
-Horizon & Ann\'ee de d\'ebut (Start) et de fin (End) de la projection \\[3pt]
-Override S\&P & Modifier les perspectives S\&P par ann\'ee (cocher ``Override S\&P values'') \\[3pt]
-Petcoke \& Clinker & Override optionnel des perspectives petcoke et clinker (pour F6) \\[3pt]
-Volatilit\'e & ``Use Historical'' calcule la volatilit\'e \`a partir des donn\'ees. Multiplier pour l'ajuster. \\[3pt]
-Spikes (Frequency) & Nombre de spikes par an (chocs de prix) \\[3pt]
-Spikes (Intensity) & Amplitude du spike en \% \\[3pt]
-Spikes (Persistence) & Dur\'ee du spike en mois \\[3pt]
-Decay Type & D\'ecroissance exponentielle ou lin\'eaire du spike \\[3pt]
-MC Paths & Nombre de trajectoires simul\'ees (100 \`a 2\,000) \\[3pt]
-Smoothing & Lissage du mouvement brownien (0.3 \`a 0.9) \\[3pt]
-Random Seed & Graine pour la reproductibilit\'e des r\'esultats \\
+Product & Variable to simulate (ACS CFR North Africa, ACS NW EU, S ME, DAP, etc.) \\[3pt]
+Horizon & Start year and end year of the projection \\[3pt]
+Override S\&P & Modify S\&P outlook values per year (check ``Override S\&P values'') \\[3pt]
+Petcoke \& Clinker & Optional override of petcoke and clinker outlooks (for F6) \\[3pt]
+Volatility & ``Use Historical'' computes volatility from data. Multiply to adjust. \\[3pt]
+Spikes (Frequency) & Number of spikes per year (price shocks) \\[3pt]
+Spikes (Intensity) & Spike amplitude in \% \\[3pt]
+Spikes (Persistence) & Spike duration in months \\[3pt]
+Decay Type & Exponential or linear spike decay \\[3pt]
+MC Paths & Number of simulated trajectories (100 to 2\,000) \\[3pt]
+Smoothing & Brownian motion smoothing (0.3 to 0.9) \\[3pt]
+Random Seed & Seed for result reproducibility \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -275,33 +268,33 @@ Random Seed & Graine pour la reproductibilit\'e des r\'esultats \\
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{02_mc_metrics.png}
-  \caption{M\'etriques et param\`etres de simulation Monte Carlo.}
+  \caption{Monte Carlo simulation metrics and parameters.}
 \end{figure}
 
-\subsection{R\'esultats}
+\subsection{Results}
 
-Apr\`es avoir cliqu\'e sur \textbf{Run Simulation} :
+After clicking \textbf{Run Simulation}:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{5 m\'etriques} en haut --- S\&P Outlook moyen, Simulated Mean, 95th pctl max, 5th pctl min, Volatilit\'e utilis\'ee.
-  \item \textbf{Graphe de projection} --- Bande bleue (intervalle 95\,\%), ligne rouge pointill\'ee (tendance S\&P), ligne bleue (sc\'enario individuel s\'electionn\'e via slider).
-  \item \textbf{3 histogrammes} --- Distribution des prix pour 3 ann\'ees (fin $-$ 2, fin $-$ 1, fin).
+  \item \textbf{5 metrics} at the top --- Average S\&P Outlook, Simulated Mean, 95th pctl max, 5th pctl min, Volatility used.
+  \item \textbf{Projection chart} --- Blue band (95\,\% interval), red dashed line (S\&P trend), blue line (individual scenario selected via slider).
+  \item \textbf{3 histograms} --- Price distribution for 3 years (end $-$ 2, end $-$ 1, end).
 \end{itemize}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{03_mc_projection.png}
-  \caption{Projection Monte Carlo : bande de confiance 95\,\%, tendance S\&P, sc\'enario individuel.}
+  \caption{Monte Carlo projection: 95\,\% confidence band, S\&P trend, individual scenario.}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{04_mc_distribution.png}
-  \caption{Distribution des prix simul\'es pour 3 ann\'ees.}
+  \caption{Simulated price distribution for 3 years.}
 \end{figure}
 
-\begin{infobox}[Interpr\'etation]
-Bande large = forte incertitude. La ligne jaune (moyenne MC, masqu\'ee par d\'efaut) montre la tendance moyenne des simulations. Activer via la l\'egende pour comparer \`a la tendance S\&P.
+\begin{infobox}[Interpretation]
+Wide band = high uncertainty. The yellow line (MC average, hidden by default) shows the average trend of simulations. Enable it via the legend to compare with the S\&P trend.
 \end{infobox}
 
 
@@ -310,126 +303,122 @@ Bande large = forte incertitude. La ligne jaune (moyenne MC, masqu\'ee par d\'ef
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Formula Lab \& Decision}
 
-Ce module a \textbf{deux fonctions} : (1) tester une formule contre l'historique du march\'e (\textit{backtest}), et (2) appliquer cette formule aux sc\'enarios Monte Carlo pour \'evaluer le risque futur.
+This module has \textbf{two functions}: (1) test a formula against the market history (\textit{backtest}), and (2) apply this formula to Monte Carlo scenarios to assess future risk.
 
-\subsection{Les six formules}
+\subsection{The Six Formulas}
 
-L'utilisateur choisit \textbf{une formule \`a la fois} dans le menu d\'eroulant. Chaque formule a ses propres param\`etres ajustables.
+The user selects \textbf{one formula at a time} from the dropdown menu. Each formula has its own adjustable parameters.
 
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{c l X}
 \toprule
-ID & Nom & Principe \\
+ID & Name & Principle \\
 \midrule
-F1 & Sulfur Indexing & Indexation directe soufre (ME/NA) + co\^ut de production \\[3pt]
-F2 & Smooth Sulfur & Comme F1, mais avec moyenne liss\'ee du soufre \\[3pt]
-F3 & Last Month ACS & Prix ACS du mois pr\'ec\'edent (pond\'eration r\'egionale) \\[3pt]
-F4 & S \& DAP Variation & Variation soufre + DAP par rapport \`a des r\'ef\'erences \\[3pt]
-F5 & Smooth S \& DAP & Comme F4, avec inputs liss\'es \\[3pt]
-F6 & Full Cost Stack & Soufre + DAP + petcoke + clinker (4 composantes) \\
+F1 & Sulfur Indexing & Direct sulfur indexation (ME/NA) + production cost \\[3pt]
+F2 & Smooth Sulfur & Like F1, but with smoothed sulfur average \\[3pt]
+F3 & Last Month ACS & Previous month ACS price (regional weighting) \\[3pt]
+F4 & S \& DAP Variation & Sulfur + DAP variation relative to references \\[3pt]
+F5 & Smooth S \& DAP & Like F4, with smoothed inputs \\[3pt]
+F6 & Full Cost Stack & Sulfur + DAP + petcoke + clinker (4 components) \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\subsection{Param\`etres de chaque formule}
+\subsection{Formula Parameters}
 
-Chaque formule expose ses coefficients (a, b, c\ldots), ses poids r\'egionaux, et ses prix de r\'ef\'erence. Un \textbf{Floor} (plancher) et un \textbf{Cap} (plafond) peuvent \^etre activ\'es ou d\'esactiv\'es via un toggle.
+Each formula exposes its coefficients (a, b, c\ldots), regional weights, and reference prices. A \textbf{Floor} and a \textbf{Cap} can be enabled or disabled via a toggle.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{05_formula_params.png}
-  \caption{S\'election de formule, \'equation, param\`etres ajustables et toggle Floor/Cap.}
+  \includegraphics[width=\textwidth]{12_formula_performance.png}
+  \caption{Formula selection, equation, adjustable parameters, and Floor/Cap toggle.}
 \end{figure}
 
-\subsection{Backtest --- Historique}
+\subsection{Backtest --- Historical}
 
-Le backtest compare la formule choisie au march\'e r\'eel sur l'historique (2018--2025 par d\'efaut, ajustable via slider).
+The backtest compares the selected formula to the real market over history (2018--2025 by default, adjustable via slider).
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Graphe Formula vs Market} --- Deux courbes : prix march\'e (rouge) et prix formule (bleu). Lignes Floor/Cap si activ\'ees.
-  \item \textbf{Graphe P\&L} --- Barres vertes (formule sous le march\'e = avantage acheteur) ou rouges (formule au-dessus = d\'esavantage). Vue trimestrielle ou annuelle.
+  \item \textbf{Formula vs Market chart} --- Two curves: market price (red) and formula price (blue). Floor/Cap lines if enabled.
+  \item \textbf{P\&L chart} --- Green bars (formula below market = buyer advantage) or red bars (formula above = disadvantage). Quarterly or annual view.
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{06_formula_backtest.png}
-  \caption{Backtest : prix march\'e (rouge) vs prix formule (bleu) sur l'historique.}
+\includegraphics[width=\textwidth]{13_contract_override.png}
+  \caption{Backtest: market price (red) vs formula price (blue) over history.}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{07_formula_pnl.png}
-  \caption{P\&L historique : barres vertes/rouges par trimestre avec moyenne.}
+    \includegraphics[width=\textwidth]{14_project_revenue.png}
+  \caption{Historical P\&L: green/red bars per quarter with average.}
 \end{figure}
 
 \subsection{Performance Summary}
 
-Cinq cartes r\'esument le backtest :
+Five cards summarize the backtest:
 
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{>{\bfseries}l X}
 \toprule
-Carte & Description \\
+Card & Description \\
 \midrule
-Avg P\&L & \'Ecart moyen formule vs march\'e (\$/t) \\[3pt]
-Win Rate & \% des p\'eriodes o\`u la formule est sous le march\'e \\[3pt]
-Best Period & Meilleur \'ecart en faveur de l'acheteur \\[3pt]
-Worst Period & Pire \'ecart (formule au-dessus du march\'e) \\[3pt]
-Annual Impact & Impact financier annualis\'e en \$M (750\,KT) \\
+Avg P\&L & Average formula vs market spread (\$/t) \\[3pt]
+Win Rate & \% of periods where the formula is below the market \\[3pt]
+Best Period & Best spread in favor of the buyer \\[3pt]
+Worst Period & Worst spread (formula above market) \\[3pt]
+Annual Impact & Annualized financial impact in \$M (750\,KT) \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{12_formula_performance.png}
-  \caption{Cartes Performance Summary : Avg P\&L, Win Rate, Best, Worst, Annual Impact.}
-\end{figure}
 
-\subsection{Decision --- Test sur sc\'enarios Monte Carlo}
+\subsection{Decision --- Test on Monte Carlo Scenarios}
 
-\begin{warningbox}[Pr\'erequis]
-Il faut d'abord lancer une simulation Monte Carlo dans l'\textbf{onglet 1} pour g\'en\'erer des sc\'enarios futurs. Ensuite, revenir ici pour appliquer la formule choisie.
+\begin{warningbox}[Prerequisite]
+You must first run a Monte Carlo simulation in \textbf{Tab 1} to generate future scenarios. Then return here to apply the selected formula.
 \end{warningbox}
 
-Cette section applique la formule s\'electionn\'ee \`a un sc\'enario Monte Carlo pour \'evaluer son comportement futur.
+This section applies the selected formula to a Monte Carlo scenario to evaluate its future behavior.
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Annual Volume} --- Volume annuel (d\'efaut 750\,KT) pour le calcul financier.
-  \item \textbf{Sc\'enario MC} --- Slider pour choisir un sc\'enario parmi ceux g\'en\'er\'es.
-  \item \textbf{Graphe Formula vs MC} --- Formule appliqu\'ee au sc\'enario futur (prix march\'e simul\'e vs prix formule).
-  \item \textbf{P\&L futur} --- Barres vertes/rouges sur la p\'eriode simul\'ee.
-  \item \textbf{3 cartes} --- Market Cost, Formula Cost, Savings (\$M/yr).
+  \item \textbf{Annual Volume} --- Annual volume (default 750\,KT) for the financial calculation.
+  \item \textbf{MC Scenario} --- Slider to choose a scenario from those generated.
+  \item \textbf{Formula vs MC chart} --- Formula applied to the future scenario (simulated market price vs formula price).
+  \item \textbf{Future P\&L} --- Green/red bars over the simulated period.
+  \item \textbf{3 cards} --- Market Cost, Formula Cost, Savings (\$M/yr).
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{08_formula_decision.png}
-  \caption{Formule appliqu\'ee \`a un sc\'enario Monte Carlo futur.}
+    \includegraphics[width=\textwidth]{15_project_prices.png}
+
+  \caption{Formula applied to a future Monte Carlo scenario.}
 \end{figure}
 
-\subsection{Risk Analysis --- Tous les sc\'enarios MC}
+\subsection{Risk Analysis --- All MC Scenarios}
 
-L'outil calcule automatiquement les savings de la formule sur \textbf{tous les sc\'enarios MC} (jusqu'\`a 200) et affiche :
+The tool automatically computes formula savings across \textbf{all MC scenarios} (up to 200) and displays:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Expected Savings} --- Savings moyen sur tous les sc\'enarios.
-  \item \textbf{Best Case (P95)} --- Savings dans le sc\'enario le plus favorable.
-  \item \textbf{Worst Case (P5)} --- Savings dans le sc\'enario le plus d\'efavorable.
-  \item \textbf{Prob. of Savings} --- \% des sc\'enarios qui montrent des \'economies.
-  \item \textbf{Histogramme} --- Distribution des savings sur l'ensemble des sc\'enarios.
+  \item \textbf{Expected Savings} --- Average savings across all scenarios.
+  \item \textbf{Best Case (P95)} --- Savings in the most favorable scenario.
+  \item \textbf{Worst Case (P5)} --- Savings in the least favorable scenario.
+  \item \textbf{Prob. of Savings} --- \% of scenarios showing savings.
+  \item \textbf{Histogram} --- Savings distribution across all scenarios.
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{09_formula_risk.png}
-  \caption{Risk Analysis : cartes Expected/Best/Worst/Probability + histogramme des savings.}
+  \includegraphics[width=\textwidth]{18_scenario_summary.png}
+  \caption{Risk Analysis: Expected/Best/Worst/Probability cards + savings histogram.}
 \end{figure}
 
-\begin{infobox}[Aide \`a la d\'ecision]
-Si la ``Prob. of Savings'' est $> 50$\,\% et le ``Worst Case'' reste acceptable, la formule offre une bonne protection. Comparer plusieurs formules en changeant la s\'election dans le menu d\'eroulant.
+\begin{infobox}[Decision Support]
+If ``Prob. of Savings'' is $> 50$\,\% and the ``Worst Case'' remains acceptable, the formula offers good protection. Compare multiple formulas by changing the selection in the dropdown menu.
 \end{infobox}
 
 
@@ -438,227 +427,179 @@ Si la ``Prob. of Savings'' est $> 50$\,\% et le ``Worst Case'' reste acceptable,
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Contract Impact Analysis}
 
-C'est le module principal pour l'analyse contractuelle. Il mod\'elise les revenus projet et \'evalue l'impact OCP sur la dur\'ee du contrat.
+This is the main module for contract analysis. It models project revenues and evaluates the OCP impact over the contract duration.
 
-\subsection{Param\`etres}
+\subsection{Parameters}
 
-Les param\`etres sont affich\'es \textbf{en haut de l'onglet} (pas dans la barre lat\'erale), en trois colonnes.
+Parameters are displayed \textbf{at the top of the tab} (not in the sidebar), in three columns.
 
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{>{\bfseries}l c X}
 \toprule
-Param\`etre & D\'efaut & Description \\
+Parameter & Default & Description \\
 \midrule
-Total Production Volume & 750 KT & Capacit\'e annuelle de production \\[4pt]
-Fixed Price & 110 \$/t & Prix fixe contractuel (ann\'ee de base) \\[4pt]
-OCP Purchase Volume & 70--100\,\% & Part achet\'ee par OCP. 70\,\% = tout en fixe \\[4pt]
-Inflation Rate & 2\,\% & Taux annuel d'inflation sur le prix fixe \\[4pt]
-Coefficient A & 1.0 & Multiplicateur FOB NW Europe \\[4pt]
-Premium B & 0 \$/t & Prime/remise ajout\'ee au prix variable \\
+Total Production Volume & 750 KT & Annual production capacity \\[4pt]
+Fixed Price & 110 \$/t & Contractual fixed price (base year) \\[4pt]
+OCP Purchase Volume & 70--100\,\% & Share purchased by OCP. 70\,\% = all at fixed \\[4pt]
+Inflation Rate & 2\,\% & Annual inflation rate on the fixed price \\[4pt]
+Coefficient A & 1.0 & FOB NW Europe multiplier \\[4pt]
+Premium B & 0 \$/t & Premium/discount added to the variable price \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Sous les param\`etres, trois \textbf{bo\^ites de formule} affichent en temps r\'eel le prix fixe, le prix variable, et la r\'epartition des volumes.
+Below the parameters, three \textbf{formula boxes} display in real time the fixed price, variable price, and volume allocation.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{10_contract_params.png}
-  \caption{Param\`etres Contract Impact : 3 colonnes + bo\^ites de formules.}
+  \includegraphics[width=\textwidth]{05_formula_params.png}
+  \caption{Contract Impact parameters: 3 columns + formula boxes.}
 \end{figure}
 
-\begin{warningbox}[Logique des volumes]
-OCP est oblig\'e d'acheter au minimum \textbf{70\,\% de la production} au \textbf{prix fixe}.
-Le curseur va de 70\,\% \`a 100\,\%. Tout volume au-dessus de 70\,\% est achet\'e au \textbf{prix variable} (formule $A \times \text{FOB}_{\text{NWE}} + B$).
+\begin{warningbox}[Volume Logic]
+OCP is required to buy at least \textbf{70\,\% of production} at the \textbf{fixed price}.
+The slider ranges from 70\,\% to 100\,\%. Any volume above 70\,\% is purchased at the \textbf{variable price} (formula $A \times \text{FOB}_{\text{NWE}} + B$).
 
 \begin{itemize}[leftmargin=1.2em]
-  \item \`A 70\,\% : OCP ach\`ete 525\,KT, tout au prix fixe.
-  \item \`A 85\,\% : OCP ach\`ete 637\,KT = 525\,KT fixe + 112\,KT variable.
-  \item \`A 100\,\% : OCP ach\`ete 750\,KT = 525\,KT fixe + 225\,KT variable.
+  \item At 70\,\%: OCP buys 525\,KT, all at the fixed price.
+  \item At 85\,\%: OCP buys 637\,KT = 525\,KT fixed + 112\,KT variable.
+  \item At 100\,\%: OCP buys 750\,KT = 525\,KT fixed + 225\,KT variable.
 \end{itemize}
 \end{warningbox}
 
-\subsection{Formules}
+\subsection{Formulas}
 
 \begin{formulabox}
-\textbf{Prix Fixe (avec inflation) :}
+\textbf{Fixed Price (with inflation):}
 \[
-P_{\text{fixe}}(t) = P_{\text{base}} \times (1 + i)^{t - t_0}
+P_{\text{fixed}}(t) = P_{\text{base}} \times (1 + i)^{t - t_0}
 \]
-o\`u $i$ = taux d'inflation annuel, $t_0$ = premi\`ere ann\'ee du filtre.
+where $i$ = annual inflation rate, $t_0$ = first year of the filter.
 
-\textbf{Prix Variable :}
+\textbf{Variable Price:}
 \[
 P_{\text{var}} = A \times \text{FOB}_{\text{NW Europe}} + B
 \]
 \end{formulabox}
 
-\subsection{Year Range \& Override march\'e}
+\subsection{Year Range \& Market Override}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Year Range} --- Slider pour restreindre la p\'eriode d'analyse (ex. 2022--2035).
-  \item \textbf{Override market price projections} --- Cocher pour saisir des prix march\'e personnalis\'es par ann\'ee. Tous les graphiques se recalculent automatiquement.
+  \item \textbf{Year Range} --- Slider to restrict the analysis period (e.g., 2022--2035).
+  \item \textbf{Override market price projections} --- Check to enter custom market prices per year. All charts recalculate automatically.
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{13_contract_override.png}
-  \caption{Override des prix march\'e : champs par ann\'ee pour modifier les prix ACS CFR North Africa.}
+    \includegraphics[width=\textwidth]{06_formula_backtest.png}
+  \caption{Market price override: fields per year to modify ACS CFR North Africa prices.}
 \end{figure}
 
 \subsection{Perspective Selector}
 
-Un bouton radio permet de basculer entre deux vues : \textbf{Project Perspective} (vendeur) et \textbf{OCP Perspective} (acheteur).
+A radio button toggles between two views: \textbf{Project Perspective} (seller) and \textbf{OCP Perspective} (buyer).
 
 \subsection{Project Perspective}
 
-Point de vue du vendeur : combien le projet g\'en\`ere de revenus.
+Seller's point of view: how much revenue the project generates.
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{5 m\'etriques} --- Avg Revenue, Weighted Avg Price, Market Ref Price, Negotiated Price, vs Market (\%).
-  \item \textbf{Business Plan Revenue} --- Barres empil\'ees : revenu fixe (bleu) + revenu variable (jaune) par ann\'ee.
-  \item \textbf{Volume Split} --- Barre empil\'ee montrant la r\'epartition fixe/variable en KT.
-  \item \textbf{Price Comparison} --- 5 courbes : Market Ref (noir), Weighted Avg (jaune), Fixed Price avec inflation (bleu pointill\'e), Negotiated Price (rouge pointill\'e), FOB NW Europe (violet).
-  \item \textbf{Sensitivity} --- Tableau comparant diff\'erents splits de volume (50/50, 60/40, \ldots, 100/0) et leur impact sur le revenu moyen.
+  \item \textbf{5 metrics} --- Avg Revenue, Weighted Avg Price, Market Ref Price, Negotiated Price, vs Market (\%).
+  \item \textbf{Business Plan Revenue} --- Stacked bars: fixed revenue (blue) + variable revenue (yellow) per year.
+  \item \textbf{Volume Split} --- Stacked bar showing the fixed/variable allocation in KT.
+  \item \textbf{Price Comparison} --- 5 curves: Market Ref (black), Weighted Avg (yellow), Fixed Price with inflation (dashed blue), Negotiated Price (dashed red), FOB NW Europe (purple).
+  \item \textbf{Sensitivity} --- Table comparing different volume splits (50/50, 60/40, \ldots, 100/0) and their impact on average revenue.
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{14_project_revenue.png}
-  \caption{Business Plan Revenue : barres empil\'ees revenu fixe (bleu) et variable (jaune) par ann\'ee.}
+    \includegraphics[width=\textwidth]{07_formula_pnl.png}
+  \caption{Business Plan Revenue: stacked bars for fixed (blue) and variable (yellow) revenue per year.}
 \end{figure}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{15_project_prices.png}
-  \caption{Price Comparison : 5 courbes de prix (march\'e, pond\'er\'e, fixe, n\'egoci\'e, FOB NWE).}
-\end{figure}
 
 \subsection{OCP Perspective}
 
-Point de vue de l'acheteur : combien OCP \'economise par rapport au march\'e.
+Buyer's point of view: how much OCP saves compared to the market.
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{4 m\'etriques} --- OCP Avg Cost, Market Cost, Avg Value Gain, Avg Price Paid.
-  \item \textbf{OCP Value Gain} --- Barres par ann\'ee. Bleu = gain portion fixe, jaune = gain portion variable. Les barres n\'egatives descendent sous z\'ero (barmode ``relative'').
-  \item \textbf{OCP Price Paid vs Market} --- 3 sc\'enarios pr\'ed\'efinis (70\,\% fixe, 85\,\%, 100\,\%) + march\'e.
-  \item \textbf{Cumulative Value Gain} --- Gain cumul\'e dans le temps pour les 3 sc\'enarios.
-  \item \textbf{Breakeven Analysis} --- March\'e (noir) vs blended contract (jaune) vs fixe avec inflation (bleu pointill\'e). Zone omhr\'ee = zone de savings.
-  \item \textbf{Scenario Comparison Summary} --- Tableau r\'ecapitulatif : volume, co\^ut, gain pour chaque sc\'enario.
+  \item \textbf{4 metrics} --- OCP Avg Cost, Market Cost, Avg Value Gain, Avg Price Paid.
+  \item \textbf{OCP Value Gain} --- Bars per year. Blue = fixed portion gain, yellow = variable portion gain. Negative bars extend below zero (barmode ``relative'').
+  \item \textbf{OCP Price Paid vs Market} --- 3 predefined scenarios (70\,\% fixed, 85\,\%, 100\,\%) + market.
+  \item \textbf{Cumulative Value Gain} --- Cumulative gain over time for the 3 scenarios.
+  \item \textbf{Breakeven Analysis} --- Market (black) vs blended contract (yellow) vs fixed with inflation (dashed blue). Shaded area = savings zone.
+  \item \textbf{Scenario Comparison Summary} --- Summary table: volume, cost, gain for each scenario.
 \end{itemize}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{11_contract_charts.png}
-  \caption{OCP Value Gain : barres de gain/perte annuel par composante fixe et variable.}
-\end{figure}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{16_ocp_prices.png}
-  \caption{OCP Price Paid vs Market : 3 sc\'enarios (70\,\%, 85\,\%, 100\,\% fixe) compar\'es au march\'e.}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{17_breakeven.png}
-  \caption{Breakeven Analysis : march\'e vs contrat avec zone de savings.}
+  \includegraphics[width=\textwidth]{10_contract_params.png}
+  \caption{Breakeven Analysis: market vs contract with savings zone.}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{18_scenario_summary.png}
-  \caption{Scenario Comparison Summary : tableau r\'ecapitulatif des 3 sc\'enarios OCP.}
+  \caption{Scenario Comparison Summary: summary table of the 3 OCP scenarios.}
 \end{figure}
 
-\begin{warningbox}[Point cl\'e]
-Quand le march\'e est \'elev\'e, le contrat \`a prix fixe avantage OCP (gain positif). Quand le march\'e baisse sous le prix fixe, le gain devient n\'egatif. L'inflation augmente le prix fixe chaque ann\'ee, ce qui r\'eduit progressivement l'avantage.
+\begin{warningbox}[Key Point]
+When the market is high, the fixed-price contract benefits OCP (positive gain). When the market drops below the fixed price, the gain becomes negative. Inflation increases the fixed price each year, gradually reducing the advantage.
 \end{warningbox}
 
 
 % ══════════════════════════════════════════════════════════════════════════════
-% SECTION 5 : FONCTIONNALITES COMMUNES
+% SECTION 5 : GENERAL FEATURES
 % ══════════════════════════════════════════════════════════════════════════════
-\section{Fonctionnalit\'es g\'en\'erales}
+\section{General Features}
 
 \begin{itemize}[leftmargin=1.5em, itemsep=6pt]
-  \item \textbf{Recalcul automatique} --- Tous les graphiques se mettent \`a jour d\`es qu'un param\`etre change.
-  \item \textbf{Filtrage temporel} --- Sliders ``Year Range'' ou ``History from'' pour restreindre la p\'eriode.
-  \item \textbf{Export graphiques} --- Survoler un graphe, cliquer sur l'ic\^one appareil photo pour sauvegarder en PNG.
-  \item \textbf{Export donn\'ees} --- Ouvrir les \'el\'ements ``Detailed Data'' pour copier-coller dans Excel.
-  \item \textbf{L\'egendes interactives} --- Cliquer sur une s\'erie dans la l\'egende pour la masquer/afficher.
+  \item \textbf{Automatic recalculation} --- All charts update as soon as a parameter changes.
+  \item \textbf{Time filtering} --- ``Year Range'' or ``History from'' sliders to restrict the period.
+  \item \textbf{Chart export} --- Hover over a chart and click the camera icon to save as PNG.
+  \item \textbf{Data export} --- Open the ``Detailed Data'' expanders to copy-paste into Excel.
+  \item \textbf{Interactive legends} --- Click a series in the legend to hide/show it.
 \end{itemize}
 
 
 % ══════════════════════════════════════════════════════════════════════════════
-% SECTION 6 : GLOSSAIRE
+% SECTION 6 : GLOSSARY
 % ══════════════════════════════════════════════════════════════════════════════
-\section{Glossaire}
+\section{Glossary}
 
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{>{\bfseries}l X}
 \toprule
-Terme & D\'efinition \\
+Term & Definition \\
 \midrule
-ACS & Acide sulfurique \\[3pt]
-CFR North Africa & Prix march\'e ACS livr\'e Afrique du Nord (r\'ef\'erence) \\[3pt]
-FOB NW Europe & Prix ACS Nord-Ouest Europe (indice variable) \\[3pt]
+ACS & Sulfuric acid \\[3pt]
+CFR North Africa & ACS market price delivered to North Africa (reference) \\[3pt]
+FOB NW Europe & ACS price North-West Europe (variable index) \\[3pt]
 OCP & Office Ch\'erifien des Phosphates \\[3pt]
-KT & Kilo-tonne (1\,000 tonnes) \\[3pt]
-Value Gain & \'Economie OCP = (Prix march\'e $-$ Prix pay\'e) $\times$ Volume \\[3pt]
-Breakeven & Point o\`u le prix contractuel \'egale le prix march\'e \\[3pt]
-P\&L & Profit and Loss = March\'e $-$ Formule (\$/t) \\[3pt]
-Monte Carlo & Simulation statistique multi-sc\'enarios \\[3pt]
-S\&P & S\&P Global Commodity Insights (source des donn\'ees) \\[3pt]
-DAP & Phosphate di-ammonique \\[3pt]
-Floor / Cap & Plancher et plafond impos\'es sur le prix formule \\
+KT & Kilo-ton (1\,000 tonnes) \\[3pt]
+Value Gain & OCP savings = (Market price $-$ Price paid) $\times$ Volume \\[3pt]
+Breakeven & Point where the contract price equals the market price \\[3pt]
+P\&L & Profit and Loss = Market $-$ Formula (\$/t) \\[3pt]
+Monte Carlo & Multi-scenario statistical simulation \\[3pt]
+S\&P & S\&P Global Commodity Insights (data source) \\[3pt]
+DAP & Di-ammonium phosphate \\[3pt]
+Floor / Cap & Floor and ceiling imposed on the formula price \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 
-% ══════════════════════════════════════════════════════════════════════════════
-% SECTION 7 : FAQ
-% ══════════════════════════════════════════════════════════════════════════════
-\section{Questions fr\'equentes}
-
-\begin{description}[leftmargin=0em, style=nextline, font=\normalfont\bfseries\color{primary}]
-
-\item[Que signifie un Value Gain n\'egatif ?]
-OCP paie plus cher que le march\'e. Cela arrive quand le march\'e baisse sous le prix fixe.
-
-\item[Pourquoi le curseur OCP va uniquement de 70 \`a 100\,\% ?]
-OCP est contractuellement oblig\'e d'acheter au minimum 70\,\% au prix fixe. Le reste (0 \`a 30\,\%) est optionnel et achet\'e au prix variable.
-
-\item[Comment simuler une hausse du march\'e ?]
-Dans l'onglet Contract Impact, cocher ``Override market price projections'' et saisir des valeurs plus \'elev\'ees. Tous les graphiques se mettent \`a jour.
-
-\item[Comment fonctionne l'inflation ?]
-Le prix fixe augmente chaque ann\'ee : $110 \times (1{,}02)^n$. Ann\'ee 2 = 112,2\,\$/t, ann\'ee 5 = 121,4\,\$/t, etc.
-
-\item[Pourquoi faut-il lancer Monte Carlo avant d'utiliser ``Decision'' ?]
-La section Decision dans l'onglet Formula Lab applique la formule aux sc\'enarios MC. Sans simulation, il n'y a pas de sc\'enarios \`a tester.
-
-\item[Comment comparer deux formules ?]
-Tester la premi\`ere formule (noter les r\'esultats), puis changer la s\'election dans le menu d\'eroulant et comparer. Il n'y a pas de tableau comparatif automatique --- la comparaison se fait formule par formule.
-
-\item[Comment exporter un graphique ?]
-Survoler le graphique et cliquer sur l'ic\^one appareil photo en haut \`a droite.
-
-\item[Que fait le bouton ``Enforce Floor / Cap'' ?]
-Quand activ\'e, le prix formule ne peut pas descendre sous le Floor ni d\'epasser le Cap. D\'esactiv\'e, la formule est libre (les lignes sont affich\'ees en gris comme r\'ef\'erence).
-
-\end{description}
 
 
 \vfill
 
 \begin{center}
 \textcolor{lightgray}{\rule{0.5\textwidth}{0.4pt}}\\[8pt]
-{\small\color{graytext} ACS Pricing Decision Platform --- Guide Utilisateur v2.0}\\[3pt]
-{\small\color{graytext} Document confidentiel --- Usage interne uniquement}
+{\small\color{graytext} ACS Pricing Decision Platform --- User Guide}\\[3pt]
+{\small\color{graytext} Confidential document --- Internal use only}
 \end{center}
 
 \end{document}

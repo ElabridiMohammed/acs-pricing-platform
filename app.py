@@ -1462,11 +1462,11 @@ def main():
                 ) / 100.0
             with vp3:
                 coeff_a_vol = st.number_input(
-                    "Coefficient A (FOB NW Europe multiplier)", 0.1, 3.0, 1.0, 0.05,
+                    "Coefficient A (FOB NW Europe multiplier)", value=1.0, step=0.05,
                     key='vol_coeff_a', help="A in formula: Variable Price = A × FOB_NWE + B"
                 )
                 premium_b_vol = st.number_input(
-                    "Premium/Discount B ($)", -50.0, 100.0, 0.0, 5.0,
+                    "Premium/Discount B ($)", value=0.0, step=5.0,
                     key='vol_premium_b', help="B in formula: Variable Price = A × FOB_NWE + B"
                 )
 
